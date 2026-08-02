@@ -10026,9 +10026,11 @@ async function addBotImagePosts() {
       const imageCount = Math.floor(Math.random() * 3) + 1;
       const mediaURLs = [];
 
-      for (let j = 0; j < imageCount; j++) {
-        mediaURLs.push(`https://picsum.photos/600/800?random=${Date.now()}_${i}_${j}`);
-      }
+     // Change from picsum.photos to unsplash source (more reliable)
+for (let j = 0; j < imageCount; j++) {
+  const imageSeed = Math.floor(Math.random() * 1000);
+  mediaURLs.push(`https://picsum.photos/seed/${imageSeed}${i}${j}/600/800`);
+}
 
       const postPromise = db.collection('posts').add({
         uid: bot.uid,
