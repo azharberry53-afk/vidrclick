@@ -2677,24 +2677,173 @@ function renderTextMedia(post) {
   `;
 }
 
-// REPLACE 'YOUR_NATIVE_KEY' and 'YOUR_INVOKE_URL' with your actual Adsterra Native Banner info
-const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e'; // From your Adsterra Native Banner
-const ADSTERRA_NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js';
+// Adsterra config - Replace with your actual keys when ready
+const ADSTERRA_NATIVE_KEY = 'YOUR_UNIQUE_KEY_HERE'; // Get from Adsterra Native Banner
+const ADSTERRA_NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js'; // e.g. '//pl27492847.profitableratecpm.com/YOUR_KEY/invoke.js'
+const USE_ADSTERRA = true; // Set to true when you have your real keys
+
+// Beautiful placeholder ads (rotates through different styles)
+const PLACEHOLDER_ADS = [
+  {
+    icon: '🛍️',
+    title: 'Shop the Latest Trends',
+    desc: 'Discover amazing products at unbeatable prices',
+    cta: 'Shop Now',
+    gradient: 'linear-gradient(135deg, #ff6bb5, #a78bfa)'
+  },
+  {
+    icon: '🎮',
+    title: 'Play Free Games',
+    desc: 'Thousands of fun games right in your browser',
+    cta: 'Play Free',
+    gradient: 'linear-gradient(135deg, #7dd3fc, #a78bfa)'
+  },
+  {
+    icon: '📱',
+    title: 'Get Our Mobile App',
+    desc: 'Better experience on iOS & Android',
+    cta: 'Download',
+    gradient: 'linear-gradient(135deg, #86efac, #4ade80)'
+  },
+  {
+    icon: '🎁',
+    title: 'Special Offer Just For You',
+    desc: 'Limited time deal - Don\'t miss out!',
+    cta: 'Claim Now',
+    gradient: 'linear-gradient(135deg, #fda4af, #f43f5e)'
+  },
+  {
+    icon: '✨',
+    title: 'Premium Features Await',
+    desc: 'Unlock everything with our premium plan',
+    cta: 'Try Free',
+    gradient: 'linear-gradient(135deg, #fcd34d, #f59e0b)'
+  },
+  {
+    icon: '🎬',
+    title: 'Watch Movies & TV',
+    desc: 'Unlimited streaming, no ads',
+    cta: 'Start Free Trial',
+    gradient: 'linear-gradient(135deg, #c084fc, #a855f7)'
+  },
+  {
+    icon: '💎',
+    title: 'Invest Smarter',
+    desc: 'Start with just $1 - Grow your wealth',
+    cta: 'Learn More',
+    gradient: 'linear-gradient(135deg, #67e8f9, #06b6d4)'
+  },
+  {
+    icon: '🍕',
+    title: 'Food Delivered Fast',
+    desc: 'Your favorite meals in 30 minutes',
+    cta: 'Order Now',
+    gradient: 'linear-gradient(135deg, #fca5a5, #ef4444)'
+  }
+];
+
+// Adsterra config - Replace with your actual keys when ready
+const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e'; // Get from Adsterra Native Banner
+const ADSTERRA_NATIVE_URL = ''; // e.g. '//pl27492847.profitableratecpm.com/YOUR_KEY/invoke.js'
+const USE_ADSTERRA = false; // Set to true when you have your real keys
+
+// Beautiful placeholder ads (rotates through different styles)
+const PLACEHOLDER_ADS = [
+  {
+    icon: '🛍️',
+    title: 'Shop the Latest Trends',
+    desc: 'Discover amazing products at unbeatable prices',
+    cta: 'Shop Now',
+    gradient: 'linear-gradient(135deg, #ff6bb5, #a78bfa)'
+  },
+  {
+    icon: '🎮',
+    title: 'Play Free Games',
+    desc: 'Thousands of fun games right in your browser',
+    cta: 'Play Free',
+    gradient: 'linear-gradient(135deg, #7dd3fc, #a78bfa)'
+  },
+  {
+    icon: '📱',
+    title: 'Get Our Mobile App',
+    desc: 'Better experience on iOS & Android',
+    cta: 'Download',
+    gradient: 'linear-gradient(135deg, #86efac, #4ade80)'
+  },
+  {
+    icon: '🎁',
+    title: 'Special Offer Just For You',
+    desc: 'Limited time deal - Don\'t miss out!',
+    cta: 'Claim Now',
+    gradient: 'linear-gradient(135deg, #fda4af, #f43f5e)'
+  },
+  {
+    icon: '✨',
+    title: 'Premium Features Await',
+    desc: 'Unlock everything with our premium plan',
+    cta: 'Try Free',
+    gradient: 'linear-gradient(135deg, #fcd34d, #f59e0b)'
+  },
+  {
+    icon: '🎬',
+    title: 'Watch Movies & TV',
+    desc: 'Unlimited streaming, no ads',
+    cta: 'Start Free Trial',
+    gradient: 'linear-gradient(135deg, #c084fc, #a855f7)'
+  },
+  {
+    icon: '💎',
+    title: 'Invest Smarter',
+    desc: 'Start with just $1 - Grow your wealth',
+    cta: 'Learn More',
+    gradient: 'linear-gradient(135deg, #67e8f9, #06b6d4)'
+  },
+  {
+    icon: '🍕',
+    title: 'Food Delivered Fast',
+    desc: 'Your favorite meals in 30 minutes',
+    cta: 'Order Now',
+    gradient: 'linear-gradient(135deg, #fca5a5, #ef4444)'
+  }
+];
 
 function renderFeedAd(index) {
-  return `
-    <div class="feed-ad" data-ad-index="${index}">
-      <div class="feed-ad-label">Sponsored</div>
-      <div class="feed-ad-container" id="feedAd_${index}">
-        <div id="container-${ADSTERRA_NATIVE_KEY}-${index}" class="adsterra-native-container"></div>
+  if (USE_ADSTERRA && ADSTERRA_NATIVE_KEY !== '33a09e788da26a493e7cb3d24079d49e') {
+    // Real Adsterra ad
+    return `
+      <div class="feed-ad" data-ad-index="${index}">
+        <div class="feed-ad-label">Sponsored</div>
+        <div class="feed-ad-container" id="feedAd_${index}">
+          <div id="container-${ADSTERRA_NATIVE_KEY}-${index}" class="adsterra-native-container"></div>
+        </div>
       </div>
-    </div>
-  `;
+    `;
+  } else {
+    // Beautiful placeholder ad
+    const ad = PLACEHOLDER_ADS[index % PLACEHOLDER_ADS.length];
+    return `
+      <div class="feed-ad" data-ad-index="${index}">
+        <div class="feed-ad-label">Sponsored</div>
+        <div class="feed-ad-placeholder" style="background:${ad.gradient}" onclick="handlePlaceholderAdClick()">
+          <div class="feed-ad-icon">${ad.icon}</div>
+          <div class="feed-ad-title">${ad.title}</div>
+          <div class="feed-ad-desc">${ad.desc}</div>
+          <button class="feed-ad-cta">${ad.cta} →</button>
+        </div>
+      </div>
+    `;
+  }
 }
 
-// New function to inject ads after feed renders
+function handlePlaceholderAdClick() {
+  APP.adImpressions++;
+  showToast('Thanks for supporting Vidr! 💖', 'success');
+}
+
 function injectFeedAds() {
-  document.querySelectorAll('.feed-ad-container').forEach((container, i) => {
+  if (!USE_ADSTERRA || !ADSTERRA_NATIVE_URL) return;
+  
+  document.querySelectorAll('.adsterra-native-container').forEach(container => {
     if (container.dataset.loaded) return;
     container.dataset.loaded = 'true';
     
@@ -2705,7 +2854,6 @@ function injectFeedAds() {
     container.appendChild(script);
   });
 }
-
 // ==================== VIDEO OBSERVER ====================
 
 function setupVideoObservers() {
