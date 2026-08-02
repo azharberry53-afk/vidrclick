@@ -50,7 +50,7 @@ const APP = {
   interstitialTimer: null,
   lastInterstitialTime: 0,
   adImpressions: 0,
-  darkMode: localStorage.getItem('vidr_dark_mode') !== 'false',
+  darkMode: localStorage.getItem('vidr_dark_mode') !== 'true',
   reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   isMobile: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
   listeners: [],
@@ -1166,7 +1166,10 @@ console.log('Vidr Part 2 loaded: Init, Auth, Navigation');
 // ==================== XP SYSTEM ====================
 
 function getXpForLevel(level) {
-  return Math.floor(XP_PER_LEVEL_BASE * Math.pow(1.05, level - 1));
+  // Cap the level to prevent overflow
+  const cappedLevel = Math.min(level, MAX_LEVEL);
+  // Use a more reasonable formula
+  return Math.floor(XP_PER_LEVEL_BASE + (cappedLevel * 50));
 }
 
 function getTotalXpForLevel(level) {
@@ -1668,42 +1671,93 @@ function showInterstitialAd() {
 }
 
 function showRewardedAd(callback) {
+  // REPLACE 'YOUR_NATIVE_BANNER_KEY' with your actual Adsterra Native Banner key
+  const NATIVE_AD_KEY = 'YOUR_NATIVE_BANNER_KEY'; // e.g., 'a1b2c3d4e5f6'
+  const NATIVE_AD_SRC = '//www.topcreativeformat.com/YOUR_KEY/invoke.js'; // Your actual URL
+  
   openCenterModal(`
-    <div class="modal-title">📺 Watch Ad</div>
-    <div id="rewardedAdContainer" style="min-height:200px;display:flex;align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0;padding:20px">
-      <div style="text-align:center;color:var(--text-muted);font-size:13px">
-        Ad Playing...<br><br>
-        <div class="loading-spinner small" style="margin:0 auto"></div>
+    <div class="modal-title">📺 Watch Ad to Earn</div>
+    <p class="modal-text" style="margin-bottom:12px">Please watch the ad below to claim your reward</p>
+    
+    <div id="rewardedAdContainer" style="min-height:280px;background:var(--bg-tertiary);border-radius:var(--radius-md);padding:16px;margin-bottom:12px;overflow:hidden">
+      <div id="container-${NATIVE_AD_KEY}"></div>
+      <div id="adFallback" style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">
+        <div style="font-size:40px;margin-bottom:10px">📺</div>
+        Loading ad...
       </div>
     </div>
-    <p class="modal-text" id="rewardedAdCountdown">Please wait 15 seconds...</p>
+    
+    <p class="modal-text" id="rewardedAdCountdown" style="text-align:center;font-weight:600">
+      ⏱️ Please wait <span id="adTimer">15</span> seconds...
+    </p>
+    
     <div class="modal-actions">
-      <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.5">Claim Reward</button>
+      <button class="modal-btn secondary" onclick="cancelRewardedAd()">Cancel</button>
+      <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.4;cursor:not-allowed">
+        Claim Reward
+      </button>
     </div>
   `);
 
-  let seconds = 15;
-  const countdownEl = document.getElementById('rewardedAdCountdown');
-  const claimBtn = document.getElementById('claimRewardBtn');
+  // Load the Adsterra Native Banner script
+  const container = document.getElementById('rewardedAdContainer');
+  if (container) {
+    const script = document.createElement('script');
+    script.async = true;
+    script.setAttribute('data-cfasync', 'false');
+    script.src = NATIVE_AD_SRC;
+    script.onerror = () => {
+      const fallback = document.getElementById('adFallback');
+      if (fallback) {
+        fallback.innerHTML = '<div style="font-size:40px;margin-bottom:10px">📺</div>Ad loading... Please wait for the timer.';
+      }
+    };
+    container.appendChild(script);
+  }
 
-  const timer = setInterval(() => {
+  // Store callback globally
+  window._rewardedAdCallback = callback;
+
+  // 15 second countdown
+  let seconds = 15;
+  const timerEl = document.getElementById('adTimer');
+  const claimBtn = document.getElementById('claimRewardBtn');
+  const countdownEl = document.getElementById('rewardedAdCountdown');
+
+  window._rewardedAdTimer = setInterval(() => {
     seconds--;
-    if (countdownEl) countdownEl.textContent = `Please wait ${seconds} seconds...`;
+    if (timerEl) timerEl.textContent = seconds;
 
     if (seconds <= 0) {
-      clearInterval(timer);
-      if (countdownEl) countdownEl.textContent = '✅ Ad completed! Claim your reward.';
+      clearInterval(window._rewardedAdTimer);
+      if (countdownEl) {
+        countdownEl.innerHTML = '✅ <strong style="color:var(--success)">Ad completed! Claim your reward.</strong>';
+      }
       if (claimBtn) {
         claimBtn.disabled = false;
         claimBtn.style.opacity = '1';
+        claimBtn.style.cursor = 'pointer';
         claimBtn.onclick = () => {
           closeCenterModal();
           APP.adImpressions++;
-          if (callback) callback();
+          if (window._rewardedAdCallback) {
+            window._rewardedAdCallback();
+            window._rewardedAdCallback = null;
+          }
         };
       }
     }
   }, 1000);
+}
+
+function cancelRewardedAd() {
+  if (window._rewardedAdTimer) {
+    clearInterval(window._rewardedAdTimer);
+    window._rewardedAdTimer = null;
+  }
+  window._rewardedAdCallback = null;
+  closeCenterModal();
+  showToast('Ad cancelled - no reward earned', 'warning');
 }
 
 // ==================== UTILITY FUNCTIONS ====================
@@ -4500,23 +4554,73 @@ async function loadProfile(uid, asOverlay = false) {
       }
     }
 
-    let quickBtns = '';
-    if (isOwn) {
-      quickBtns = `
-        <div class="profile-quick-btns">
-          <button class="profile-quick-btn" onclick="openGames()">🎮 Games</button>
-          <button class="profile-quick-btn" onclick="openLeaderboard()">🏆 Leaderboard</button>
-          <button class="profile-quick-btn" onclick="openXpBoost()">⚡ XP Boost</button>
-          <button class="profile-quick-btn" onclick="openSpinWheel()">🎡 Spin</button>
-          <button class="profile-quick-btn" onclick="openWallet()">💰 Wallet</button>
-          <button class="profile-quick-btn" onclick="openEarnPage()">📋 Earn</button>
-          <button class="profile-quick-btn" onclick="openCampaign()">📺 Watch Ads</button>
-          <button class="profile-quick-btn" onclick="openShop()">🛍️ Shop</button>
-          ${isAdmin || isUserAdmin ? '<button class="profile-quick-btn" onclick="openAdmin()">⚙️ Admin</button>' : ''}
-        </div>
-      `;
-    }
+   // FIND this section in loadProfile:
+let quickBtns = '';
+if (isOwn) {
+  quickBtns = `
+    <div class="profile-quick-btns">
+      ...
+    </div>
+  `;
+}
 
+// REPLACE WITH:
+let quickBtns = '';
+if (isOwn) {
+  quickBtns = `
+    <div class="profile-menu-section">
+      <div class="profile-menu-title">💫 Rewards & Earnings</div>
+      <div class="profile-menu-grid">
+        <button class="profile-menu-item" onclick="openWallet()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fcd34d,#f59e0b)">💰</div>
+          <span>Wallet</span>
+        </button>
+        <button class="profile-menu-item" onclick="openSpinWheel()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#a78bfa,#7c3aed)">🎡</div>
+          <span>Spin</span>
+        </button>
+        <button class="profile-menu-item" onclick="openGames()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#ff6bb5,#ec4899)">🎮</div>
+          <span>Games</span>
+        </button>
+        <button class="profile-menu-item" onclick="openCampaign()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#7dd3fc,#3b82f6)">📺</div>
+          <span>Watch Ads</span>
+        </button>
+        <button class="profile-menu-item" onclick="openEarnPage()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#86efac,#10b981)">📋</div>
+          <span>How to Earn</span>
+        </button>
+        <button class="profile-menu-item" onclick="openReferral()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fda4af,#f43f5e)">👥</div>
+          <span>Refer</span>
+        </button>
+      </div>
+
+      <div class="profile-menu-title">🏆 Progress & Community</div>
+      <div class="profile-menu-grid">
+        <button class="profile-menu-item" onclick="openLeaderboard()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fcd34d,#f59e0b)">🏆</div>
+          <span>Leaderboard</span>
+        </button>
+        <button class="profile-menu-item" onclick="openXpBoost()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#a78bfa,#8b5cf6)">⚡</div>
+          <span>XP Boost</span>
+        </button>
+        <button class="profile-menu-item" onclick="openShop()">
+          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#ff9bcf,#ff6bb5)">🛍️</div>
+          <span>Shop</span>
+        </button>
+        ${isAdmin || isUserAdmin ? `
+          <button class="profile-menu-item" onclick="openAdmin()">
+            <div class="profile-menu-icon" style="background:linear-gradient(135deg,#f87171,#dc2626)">⚙️</div>
+            <span>Admin</span>
+          </button>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
     let gridHTML = renderProfileGrid(posts);
     const coverClass = showGlow ? 'animated' : '';
 
