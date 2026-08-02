@@ -58,7 +58,6 @@ const APP = {
 };
 
 // ==================== CONSTANTS ====================
-const ADMIN_EMAIL = 'azharberry53@gmail.com';
 const MAX_LEVEL = 10000;
 const XP_PER_LEVEL_BASE = 100;
 const FEED_PAGE_SIZE = 10;
