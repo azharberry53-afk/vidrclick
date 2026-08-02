@@ -23,6 +23,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <link rel="stylesheet" href="style.css">
+
+<!-- Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+
 </head>
 <body>
 
@@ -546,6 +550,25 @@
 
 <!-- Adsterra Social Bar -->
 <script type='text/javascript' src='https://pl30481982.effectivecpmnetwork.com/3e/49/5a/3e495ab467031ef4a211837c890dbba2.js'></script>
+
+<!-- Stripe Payment Modal -->
+<div id="stripePaymentModal" class="center-modal" style="display:none">
+  <div class="center-modal-overlay" onclick="closeStripeModal()"></div>
+  <div class="center-modal-content" style="max-width:420px">
+    <div class="modal-title">💳 Payment</div>
+    <div id="stripeAmountDisplay" style="text-align:center;font-size:24px;font-weight:800;color:var(--primary);margin:16px 0"></div>
+    
+    <form id="stripePaymentForm">
+      <div id="stripePaymentElement" style="margin-bottom:16px"></div>
+      <div id="stripePaymentError" style="color:var(--error);font-size:13px;margin-bottom:12px;min-height:16px"></div>
+      
+      <div class="modal-actions">
+        <button type="button" class="modal-btn secondary" onclick="closeStripeModal()">Cancel</button>
+        <button type="submit" class="modal-btn primary" id="stripeSubmitBtn">Pay Now</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
