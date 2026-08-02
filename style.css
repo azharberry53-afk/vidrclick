@@ -6371,6 +6371,124 @@ input[type="file"] {
   min-height: 250px;
 }
 
+/* ==================== FEED AD STYLES ==================== */
+.feed-ad {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-primary);
+}
+
+.feed-ad-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.feed-ad-label::before {
+  content: '⚡';
+  font-size: 12px;
+}
+
+.feed-ad-placeholder {
+  width: 100%;
+  min-height: 280px;
+  border-radius: var(--radius-xl);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.feed-ad-placeholder::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 50%);
+  animation: adShimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes adShimmer {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, 20px); }
+}
+
+.feed-ad-placeholder:active {
+  transform: scale(0.98);
+}
+
+.feed-ad-icon {
+  font-size: 56px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  position: relative;
+  z-index: 1;
+  animation: adIconBounce 2s ease-in-out infinite;
+}
+
+@keyframes adIconBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.feed-ad-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 1;
+  max-width: 280px;
+  line-height: 1.3;
+}
+
+.feed-ad-desc {
+  font-size: 13px;
+  opacity: 0.95;
+  margin-bottom: 20px;
+  max-width: 260px;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+
+.feed-ad-cta {
+  padding: 12px 32px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.feed-ad-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* Print hide */
 @media print {
   .bottom-nav,
