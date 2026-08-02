@@ -1605,9 +1605,10 @@ function startStoriesHideTimer() {
 }
 
 // ==================== AD SYSTEM ====================
-
 function setupBannerAd() {
   const bannerAd = document.getElementById('bannerAd');
+  if (!bannerAd) return; // Safety check
+  
   bannerAd.style.display = 'flex';
   loadAdsterraBanner();
 
@@ -1619,9 +1620,8 @@ function setupBannerAd() {
 
 function loadAdsterraBanner() {
   const bannerContent = document.getElementById('bannerAdContent');
-  if (!bannerContent) return;
-
-  // Replace with your actual Adsterra 468x60 code
+  if (!bannerContent) return; // Safety check - THIS FIXES THE ERROR
+  
   bannerContent.innerHTML = `
     <div style="width:320px;height:50px;background:var(--bg-tertiary);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted)">
       <script>
