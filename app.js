@@ -642,11 +642,13 @@ function navigateTo(page, data = null) {
   }
 
   if (pages.includes(page)) {
+    // Safely hide overlay pages
     overlayPages.forEach(p => {
       const el = document.getElementById(p);
       if (el) el.classList.remove('active');
     });
 
+    // Safely hide main pages
     pages.forEach(p => {
       const el = document.getElementById(p + 'Page');
       if (el) el.classList.remove('active');
@@ -655,10 +657,12 @@ function navigateTo(page, data = null) {
     const target = document.getElementById(page + 'Page');
     if (target) target.classList.add('active');
 
+    // Update nav (safely)
     document.querySelectorAll('.nav-item').forEach(item => {
       item.classList.toggle('active', item.dataset.page === page);
     });
 
+    // Get elements safely
     const header = document.getElementById('topHeader');
     const storiesBar = document.getElementById('storiesBar');
     const feedTabs = document.getElementById('feedTabs');
@@ -666,23 +670,23 @@ function navigateTo(page, data = null) {
     const bannerAd = document.getElementById('bannerAd');
 
     if (page === 'home') {
-      header.style.display = 'flex';
-      feedTabs.style.display = 'flex';
-      if (!APP.storiesHidden) storiesBar.classList.remove('hidden');
-      bottomNav.style.display = 'flex';
-      bannerAd.style.display = 'flex';
+      if (header) header.style.display = 'flex';
+      if (feedTabs) feedTabs.style.display = 'flex';
+      if (storiesBar && !APP.storiesHidden) storiesBar.classList.remove('hidden');
+      if (bottomNav) bottomNav.style.display = 'flex';
+      if (bannerAd) bannerAd.style.display = 'flex';
       startFeedXpTimer();
       startStoriesHideTimer();
     } else {
-      feedTabs.style.display = 'none';
+      if (feedTabs) feedTabs.style.display = 'none';
       if (page === 'discover' || page === 'create' || page === 'chat') {
-        header.style.display = 'flex';
+        if (header) header.style.display = 'flex';
       } else {
-        header.style.display = 'none';
+        if (header) header.style.display = 'none';
       }
-      storiesBar.classList.add('hidden');
-      bottomNav.style.display = 'flex';
-      bannerAd.style.display = 'flex';
+      if (storiesBar) storiesBar.classList.add('hidden');
+      if (bottomNav) bottomNav.style.display = 'flex';
+      if (bannerAd) bannerAd.style.display = 'flex';
       stopFeedXpTimer();
     }
 
@@ -705,7 +709,6 @@ function navigateTo(page, data = null) {
     }
   }
 }
-
 function openOverlayPage(pageId) {
   const page = document.getElementById(pageId);
   if (page) {
@@ -715,10 +718,15 @@ function openOverlayPage(pageId) {
     });
   }
 
-  document.getElementById('bottomNav').style.display = 'none';
-  document.getElementById('bannerAd').style.display = 'none';
-  document.getElementById('topHeader').style.display = 'none';
-  document.getElementById('storiesBar').classList.add('hidden');
+  const bottomNav = document.getElementById('bottomNav');
+  const bannerAd = document.getElementById('bannerAd');
+  const topHeader = document.getElementById('topHeader');
+  const storiesBar = document.getElementById('storiesBar');
+
+  if (bottomNav) bottomNav.style.display = 'none';
+  if (bannerAd) bannerAd.style.display = 'none';
+  if (topHeader) topHeader.style.display = 'none';
+  if (storiesBar) storiesBar.classList.add('hidden');
 }
 
 function closeOverlayPage(pageId) {
@@ -730,13 +738,18 @@ function closeOverlayPage(pageId) {
     }, 300);
   }
 
-  document.getElementById('bottomNav').style.display = 'flex';
-  document.getElementById('bannerAd').style.display = 'flex';
+  const bottomNav = document.getElementById('bottomNav');
+  const bannerAd = document.getElementById('bannerAd');
+  
+  if (bottomNav) bottomNav.style.display = 'flex';
+  if (bannerAd) bannerAd.style.display = 'flex';
 
   if (APP.currentPage === 'home') {
-    document.getElementById('topHeader').style.display = 'flex';
-    if (!APP.storiesHidden) {
-      document.getElementById('storiesBar').classList.remove('hidden');
+    const topHeader = document.getElementById('topHeader');
+    const storiesBar = document.getElementById('storiesBar');
+    if (topHeader) topHeader.style.display = 'flex';
+    if (storiesBar && !APP.storiesHidden) {
+      storiesBar.classList.remove('hidden');
     }
   }
 }
