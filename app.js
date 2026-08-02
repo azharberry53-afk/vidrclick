@@ -2895,15 +2895,18 @@ function handleMediaClick(postId, type) {
 
 function openPostOptions(postId, uid) {
   const isOwn = uid === APP.currentUser?.uid;
-  const isAdmin = APP.currentUserData?.role === 'admin';
+  const isAdmin = APP.currentUserData?.role === 'admin' || APP.currentUser?.email === ADMIN_EMAIL;
 
   let options = '';
 
+  // Delete option (own posts or admin)
   if (isOwn || isAdmin) {
     options += `
       <div class="sheet-option danger" onclick="deletePost('${postId}')">
         <div class="sheet-option-icon">🗑️</div>
-        <div class="sheet-option-text"><div class="sheet-option-label">Delete Post</div></div>
+        <div class="sheet-option-text">
+          <div class="sheet-option-label" style="color:var(--error)">Delete Post</div>
+        </div>
       </div>
     `;
   }
@@ -2950,39 +2953,66 @@ function openPostOptions(postId, uid) {
 async function deletePost(postId) {
   closeBottomSheet();
 
-  openCenterModal(`
-    <div class="modal-title">Delete Post</div>
-    <p class="modal-text">This action cannot be undone.</p>
-    <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
-      <button class="modal-btn danger" onclick="confirmDeletePost('${postId}')">Delete</button>
-    </div>
-  `);
+  // Small delay to ensure bottom sheet closes first
+  setTimeout(() => {
+    openCenterModal(`
+      <div class="modal-title">🗑️ Delete Post</div>
+      <p class="modal-text">Are you sure you want to delete this post? This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+        <button class="modal-btn danger" onclick="confirmDeletePost('${postId}')">Delete</button>
+      </div>
+    `);
+  }, 300);
 }
 
 async function confirmDeletePost(postId) {
   closeCenterModal();
   showLoading();
+  
   try {
+    // Delete the post
     await db.collection('posts').doc(postId).delete();
+    
+    // Update local arrays
     APP.feedPosts = APP.feedPosts.filter(p => p.id !== postId);
     APP.followingFeedPosts = APP.followingFeedPosts.filter(p => p.id !== postId);
 
-    if (APP.feedTab === 'foryou') renderFeed();
-    else renderFollowingFeed();
-
+    // Decrement post count
     await db.collection('users').doc(APP.currentUser.uid).update({
       postsCount: firebase.firestore.FieldValue.increment(-1),
     });
 
     hideLoading();
-    showToast('Post deleted', 'success');
+    showToast('Post deleted successfully', 'success');
+
+    // Close single post view if open
+    const singlePostPage = document.getElementById('singlePostPage');
+    if (singlePostPage && singlePostPage.classList.contains('active')) {
+      closeOverlayPage('singlePostPage');
+    }
+
+    // Refresh based on current page
+    setTimeout(() => {
+      if (APP.currentPage === 'profile') {
+        // Refresh profile to update grid
+        loadProfile(APP.currentUser.uid);
+      } else if (APP.currentPage === 'home') {
+        // Re-render feed
+        if (APP.feedTab === 'foryou') {
+          renderFeed();
+        } else {
+          renderFollowingFeed();
+        }
+      }
+    }, 300);
+
   } catch (err) {
     hideLoading();
-    showToast('Failed to delete post', 'error');
+    showToast('Failed to delete post: ' + err.message, 'error');
+    console.error('Delete post error:', err);
   }
 }
-
 async function repostPost(postId) {
   closeBottomSheet();
   const post = APP.feedPosts.find(p => p.id === postId) || APP.followingFeedPosts.find(p => p.id === postId);
@@ -8842,36 +8872,68 @@ async function renderAdminPanel() {
   container.innerHTML = '<div class="loading-spinner small" style="margin:60px auto"></div>';
 
   try {
-    const usersSnap = await db.collection('users').get();
+    // Check permissions first
+    const isAdminUser = APP.currentUserData?.role === 'admin' || 
+                       APP.currentUser?.email === ADMIN_EMAIL;
+    
+    if (!isAdminUser) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🔒</div>
+          <h3>Access Denied</h3>
+          <p>You don't have admin permissions</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Fetch stats with error handling
     let totalUsers = 0, activeUsers = 0, bannedUsers = 0, verifiedUsers = 0, botUsers = 0;
+    let totalPosts = 0, totalOrders = 0, totalRevenue = 0;
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
 
-    usersSnap.forEach(doc => {
-      const u = doc.data();
-      totalUsers++;
-      if (u.banned) bannedUsers++;
-      if (u.verified) verifiedUsers++;
-      if (u.isBot) botUsers++;
-      if (u.lastActive) {
-        const la = u.lastActive.toDate ? u.lastActive.toDate() : new Date(u.lastActive);
-        if (la > sevenDaysAgo) activeUsers++;
-      }
-    });
+    try {
+      const usersSnap = await db.collection('users').get();
+      usersSnap.forEach(doc => {
+        const u = doc.data();
+        totalUsers++;
+        if (u.banned) bannedUsers++;
+        if (u.verified) verifiedUsers++;
+        if (u.isBot) botUsers++;
+        if (u.lastActive) {
+          const la = u.lastActive.toDate ? u.lastActive.toDate() : new Date(u.lastActive);
+          if (la > sevenDaysAgo) activeUsers++;
+        }
+      });
+    } catch (e) {
+      console.warn('Users stats error:', e);
+    }
 
-    const postsSnap = await db.collection('posts').get();
-    const totalPosts = postsSnap.size;
+    try {
+      const postsSnap = await db.collection('posts').get();
+      totalPosts = postsSnap.size;
+    } catch (e) {
+      console.warn('Posts stats error:', e);
+    }
 
-    const ordersSnap = await db.collection('orders').get();
-    const totalOrders = ordersSnap.size;
+    try {
+      const ordersSnap = await db.collection('orders').get();
+      totalOrders = ordersSnap.size;
+    } catch (e) {
+      console.warn('Orders stats error:', e);
+    }
 
-    let totalRevenue = 0;
-    const transSnap = await db.collection('transactions')
-      .where('type', 'in', ['purchase', 'subscription'])
-      .get();
-    transSnap.forEach(doc => {
-      const t = doc.data();
-      if (t.price) totalRevenue += t.price;
-    });
+    try {
+      const transSnap = await db.collection('transactions')
+        .where('type', 'in', ['purchase', 'subscription'])
+        .get();
+      transSnap.forEach(doc => {
+        const t = doc.data();
+        if (t.price) totalRevenue += t.price;
+      });
+    } catch (e) {
+      console.warn('Revenue stats error:', e);
+    }
 
     container.innerHTML = `
       <div class="admin-stats-grid">
@@ -8929,7 +8991,14 @@ async function renderAdminPanel() {
     `;
   } catch (err) {
     console.error('Admin panel error:', err);
-    container.innerHTML = '<div class="empty-state"><p>Failed to load admin panel</p></div>';
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <h3>Failed to load admin panel</h3>
+        <p style="font-size:12px;color:var(--text-muted);max-width:300px">${err.message}</p>
+        <button class="modal-btn primary" style="margin-top:16px;width:auto;padding:10px 24px" onclick="renderAdminPanel()">Retry</button>
+      </div>
+    `;
   }
 }
 
