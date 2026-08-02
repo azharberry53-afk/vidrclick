@@ -6179,6 +6179,31 @@ input[type="file"] {
   display: none !important;
 }
 
+/* Admin panel light mode fix */
+[data-theme="light"] .admin-page,
+[data-theme="light"] #adminPage {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-stat-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-action-btn {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-search {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
 /* Print hide */
 @media print {
   .bottom-nav,
