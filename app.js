@@ -321,36 +321,39 @@ const BOT_BIOS = [
 ];
 
 const BOT_VIDEO_URLS = [
-  'https://videos.pexels.com/video-files/3571264/3571264-sd_506_960_30fps.mp4',
-  'https://videos.pexels.com/video-files/1448735/1448735-sd_640_360_24fps.mp4',
-  'https://videos.pexels.com/video-files/4678261/4678261-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/2795173/2795173-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/856973/856973-sd_640_360_30fps.mp4',
-  'https://videos.pexels.com/video-files/3209828/3209828-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/2845134/2845134-sd_640_360_30fps.mp4',
-  'https://videos.pexels.com/video-files/4812204/4812204-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/3205918/3205918-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/5752729/5752729-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4434242/4434242-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4065924/4065924-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/3999678/3999678-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/3015510/3015510-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/3141207/3141207-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/5198160/5198160-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4536790/4536790-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4253234/4253234-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/3059869/3059869-sd_640_360_30fps.mp4',
-  'https://videos.pexels.com/video-files/3298572/3298572-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4990119/4990119-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/5548024/5548024-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4488161/4488161-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4321804/4321804-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/7989540/7989540-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4261563/4261563-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/6012028/6012028-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4168986/4168986-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/4057270/4057270-sd_506_960_25fps.mp4',
-  'https://videos.pexels.com/video-files/5377700/5377700-sd_506_960_25fps.mp4',
+  // Google Cloud Storage sample videos (always work)
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4',
+  // W3Schools test videos
+  'https://www.w3schools.com/html/mov_bbb.mp4',
+  'https://www.w3schools.com/html/movie.mp4',
+  // Sample videos from various CDNs
+  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+  'https://sample-videos.com/video321/mp4/480/big_buck_bunny_480p_1mb.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4',
 ];
 
 const BOT_CAPTIONS = [
@@ -2459,6 +2462,7 @@ function renderFeed() {
   setupVideoObservers();
   setupCarousels();
   setupFeedScroll();
+  injectFeedAds(); // ADD THIS LINE
 }
 
 function renderFollowingFeed() {
@@ -2481,6 +2485,7 @@ function renderFollowingFeed() {
   setupVideoObservers();
   setupCarousels();
   setupFeedScroll();
+  injectFeedAds(); // ADD THIS LINE
 }
 
 function renderEmptyFeed() {
@@ -2672,15 +2677,33 @@ function renderTextMedia(post) {
   `;
 }
 
+// REPLACE 'YOUR_NATIVE_KEY' and 'YOUR_INVOKE_URL' with your actual Adsterra Native Banner info
+const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e'; // From your Adsterra Native Banner
+const ADSTERRA_NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js';
+
 function renderFeedAd(index) {
   return `
     <div class="feed-ad" data-ad-index="${index}">
       <div class="feed-ad-label">Sponsored</div>
-      <div id="feedAd_${index}" style="width:100%;min-height:250px;display:flex;align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:var(--radius-md);color:var(--text-muted);font-size:13px">
-        Ad Content
+      <div class="feed-ad-container" id="feedAd_${index}">
+        <div id="container-${ADSTERRA_NATIVE_KEY}-${index}" class="adsterra-native-container"></div>
       </div>
     </div>
   `;
+}
+
+// New function to inject ads after feed renders
+function injectFeedAds() {
+  document.querySelectorAll('.feed-ad-container').forEach((container, i) => {
+    if (container.dataset.loaded) return;
+    container.dataset.loaded = 'true';
+    
+    const script = document.createElement('script');
+    script.async = true;
+    script.setAttribute('data-cfasync', 'false');
+    script.src = ADSTERRA_NATIVE_URL;
+    container.appendChild(script);
+  });
 }
 
 // ==================== VIDEO OBSERVER ====================
