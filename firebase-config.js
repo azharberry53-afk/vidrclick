@@ -39,7 +39,4 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
   }
 });
 
-// Admin email
-const ADMIN_EMAIL = 'azharberry53@gmail.com';
-
 console.log('Firebase initialized successfully');
