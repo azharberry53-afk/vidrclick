@@ -1258,11 +1258,13 @@ textarea::placeholder {
   margin-top: 4px;
 }
 
-/* Feed ad */
+/* Feed Ad Styling */
 .feed-ad {
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
-  padding: 10px 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  margin: 8px 0;
 }
 
 .feed-ad-label {
@@ -1270,7 +1272,33 @@ textarea::placeholder {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.feed-ad-container {
+  width: 100%;
+  min-height: 250px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.adsterra-native-container {
+  width: 100%;
+  min-height: 250px;
+}
+
+/* Placeholder when ad hasn't loaded */
+.feed-ad-container:empty::before,
+.feed-ad-container .adsterra-native-container:empty::before {
+  content: '📺 Ad Loading...';
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 /* Pull to refresh */
