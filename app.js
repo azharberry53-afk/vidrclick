@@ -9781,91 +9781,131 @@ async function createBots(count) {
 
   showLoading();
   let created = 0;
+  let failed = 0;
 
   try {
-    for (let i = 0; i < count; i++) {
-      const firstName = BOT_FIRST_NAMES[Math.floor(Math.random() * BOT_FIRST_NAMES.length)];
-      const lastName = BOT_LAST_NAMES[Math.floor(Math.random() * BOT_LAST_NAMES.length)];
-      const displayName = `${firstName} ${lastName}`;
-      const username = `${firstName.toLowerCase()}${lastName.toLowerCase()}${Math.floor(Math.random() * 999)}`;
-      const bio = BOT_BIOS[Math.floor(Math.random() * BOT_BIOS.length)];
-      const avatarId = Math.floor(Math.random() * 70) + 1;
-      const gender = Math.random() > 0.5 ? 'men' : 'women';
-      const photoURL = `https://randomuser.me/api/portraits/${gender}/${avatarId}.jpg`;
-      const isVerified = Math.random() < 0.1;
-      const level = Math.floor(Math.random() * 50) + 1;
-      const followers = Math.floor(Math.random() * 5000);
+    // Process in batches of 20 for reliability
+    const batchSize = 20;
+    const totalBatches = Math.ceil(count / batchSize);
 
-      const botUid = `bot_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 8)}`;
-
-      await db.collection('users').doc(botUid).set({
-        uid: botUid,
-        email: `${username}@bot.vidr.click`,
-        displayName,
-        username,
-        photoURL,
-        coverURL: '',
-        bio,
-        level,
-        xp: Math.floor(Math.random() * 100),
-        xpBoostEnd: null,
-        freeCoins: Math.floor(Math.random() * 500),
-        goldCoins: Math.floor(Math.random() * 100),
-        followersCount: followers,
-        followingCount: Math.floor(Math.random() * 200),
-        likesCount: Math.floor(Math.random() * 3000),
-        postsCount: 0,
-        totalViews: Math.floor(Math.random() * 10000),
-        verified: isVerified,
-        verifiedUntil: null,
-        role: 'user',
-        titles: [TITLE_PRESETS[Math.floor(Math.random() * TITLE_PRESETS.length)]],
-        selectedTitle: TITLE_PRESETS[Math.floor(Math.random() * TITLE_PRESETS.length)],
-        achievements: {},
-        selectedAchievements: [],
-        banned: false,
-        suspended: false,
-        isPrivate: false,
-        isBot: true,
-        dailyStreak: Math.floor(Math.random() * 30),
-        lastDailyReward: null,
-        lastLoginDate: null,
-        referredBy: null,
-        referralCount: 0,
-        referralEarnings: 0,
-        totalGiftsReceived: Math.floor(Math.random() * 100),
-        totalGiftsSent: Math.floor(Math.random() * 50),
-        totalSpent: 0,
-        totalEarned: 0,
-        stripeCustomerId: null,
-        stripeConnectId: null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        lastActive: firebase.firestore.FieldValue.serverTimestamp(),
-        notifSettings: { likes: true, comments: true, followers: true, messages: true, live: true },
-        blockedUsers: [],
-        profileViews: Math.floor(Math.random() * 500),
+    for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+      const batchCount = Math.min(batchSize, count - (batchNum * batchSize));
+      
+      // Create promises for parallel creation
+      const promises = [];
+      
+      for (let i = 0; i < batchCount; i++) {
+        promises.push(createSingleBot(batchNum * batchSize + i));
+      }
+      
+      const results = await Promise.allSettled(promises);
+      results.forEach(r => {
+        if (r.status === 'fulfilled') created++;
+        else {
+          failed++;
+          console.warn('Bot creation failed:', r.reason);
+        }
       });
 
-      try {
-        await db.collection('usernames').doc(username).set({ uid: botUid });
-      } catch {}
-
-      created++;
+      // Small delay between batches
+      if (batchNum < totalBatches - 1) {
+        await new Promise(r => setTimeout(r, 500));
+      }
     }
 
     hideLoading();
-    showToast(`${created} bots created! 🤖`, 'success');
+    if (created > 0) {
+      showToast(`✅ ${created} bots created!${failed > 0 ? ` (${failed} failed)` : ''} 🤖`, 'success');
+    } else {
+      showToast('Failed to create bots. Check Firestore rules.', 'error');
+    }
     renderAdminPanel();
   } catch (err) {
     hideLoading();
-    showToast(`Created ${created} bots. Error: ${err.message}`, 'warning');
+    showToast(`Error: ${err.message}`, 'error');
     console.error('Bot creation error:', err);
   }
+}
+
+async function createSingleBot(index) {
+  const firstName = BOT_FIRST_NAMES[Math.floor(Math.random() * BOT_FIRST_NAMES.length)];
+  const lastName = BOT_LAST_NAMES[Math.floor(Math.random() * BOT_LAST_NAMES.length)];
+  const displayName = `${firstName} ${lastName}`;
+  const username = `${firstName.toLowerCase()}${lastName.toLowerCase()}${Math.floor(Math.random() * 9999)}`;
+  const bio = BOT_BIOS[Math.floor(Math.random() * BOT_BIOS.length)];
+  const avatarId = Math.floor(Math.random() * 99) + 1;
+  const gender = Math.random() > 0.5 ? 'men' : 'women';
+  const photoURL = `https://randomuser.me/api/portraits/${gender}/${avatarId}.jpg`;
+  const isVerified = Math.random() < 0.1;
+  const level = Math.floor(Math.random() * 50) + 1;
+  const followers = Math.floor(Math.random() * 5000);
+
+  const botUid = `bot_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const botData = {
+    uid: botUid,
+    email: `${username}@bot.vidr.click`,
+    displayName,
+    username,
+    photoURL,
+    coverURL: '',
+    bio,
+    level,
+    xp: Math.floor(Math.random() * 100),
+    xpBoostEnd: null,
+    freeCoins: Math.floor(Math.random() * 500),
+    goldCoins: Math.floor(Math.random() * 100),
+    followersCount: followers,
+    followingCount: Math.floor(Math.random() * 200),
+    likesCount: Math.floor(Math.random() * 3000),
+    postsCount: 0,
+    totalViews: Math.floor(Math.random() * 10000),
+    verified: isVerified,
+    verifiedUntil: null,
+    role: 'user',
+    titles: [TITLE_PRESETS[Math.floor(Math.random() * TITLE_PRESETS.length)]],
+    selectedTitle: TITLE_PRESETS[Math.floor(Math.random() * TITLE_PRESETS.length)],
+    achievements: {},
+    selectedAchievements: [],
+    banned: false,
+    suspended: false,
+    isPrivate: false,
+    isBot: true,
+    dailyStreak: Math.floor(Math.random() * 30),
+    lastDailyReward: null,
+    lastLoginDate: null,
+    referredBy: null,
+    referralCount: 0,
+    referralEarnings: 0,
+    totalGiftsReceived: Math.floor(Math.random() * 100),
+    totalGiftsSent: Math.floor(Math.random() * 50),
+    totalSpent: 0,
+    totalEarned: 0,
+    stripeCustomerId: null,
+    stripeConnectId: null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+    notifSettings: { likes: true, comments: true, followers: true, messages: true, live: true },
+    blockedUsers: [],
+    profileViews: Math.floor(Math.random() * 500),
+  };
+
+  await db.collection('users').doc(botUid).set(botData);
+
+  // Try to reserve username (may fail if taken, that's ok)
+  try {
+    await db.collection('usernames').doc(username).set({ uid: botUid });
+  } catch (e) {
+    console.warn('Username taken, skipping:', username);
+  }
+
+  return botUid;
 }
 
 async function addBotVideos() {
   showLoading();
   let added = 0;
+  let failed = 0;
 
   try {
     const botsSnap = await db.collection('users')
@@ -9881,12 +9921,13 @@ async function addBotVideos() {
     const bots = [];
     botsSnap.forEach(doc => bots.push(doc.data()));
 
+    const promises = [];
     for (let i = 0; i < 30; i++) {
       const bot = bots[Math.floor(Math.random() * bots.length)];
       const videoURL = BOT_VIDEO_URLS[i % BOT_VIDEO_URLS.length];
       const caption = BOT_CAPTIONS[Math.floor(Math.random() * BOT_CAPTIONS.length)];
 
-      await db.collection('posts').add({
+      const postPromise = db.collection('posts').add({
         uid: bot.uid,
         type: 'video',
         mediaURL: videoURL,
@@ -9902,24 +9943,36 @@ async function addBotVideos() {
         boosted: false,
         isBot: true,
         createdAt: new Date(Date.now() - Math.random() * 7 * 86400000),
+      }).then(async () => {
+        try {
+          await db.collection('users').doc(bot.uid).update({
+            postsCount: firebase.firestore.FieldValue.increment(1),
+          });
+        } catch {}
       });
 
-      await db.collection('users').doc(bot.uid).update({
-        postsCount: firebase.firestore.FieldValue.increment(1),
-      });
-
-      added++;
+      promises.push(postPromise);
     }
 
+    const results = await Promise.allSettled(promises);
+    results.forEach(r => {
+      if (r.status === 'fulfilled') added++;
+      else failed++;
+    });
+
     hideLoading();
-    showToast(`${added} bot video posts added! 🎬`, 'success');
+    if (added > 0) {
+      showToast(`✅ ${added} bot video posts added!${failed > 0 ? ` (${failed} failed)` : ''} 🎬`, 'success');
+    } else {
+      showToast('Failed to add bot posts', 'error');
+    }
 
     APP.feedPosts = [];
     APP.feedLastDoc = null;
     APP.feedEnded = false;
   } catch (err) {
     hideLoading();
-    showToast(`Added ${added}. Error: ${err.message}`, 'warning');
+    showToast(`Error: ${err.message}`, 'warning');
     console.error('Bot video error:', err);
   }
 }
@@ -9927,6 +9980,7 @@ async function addBotVideos() {
 async function addBotImagePosts() {
   showLoading();
   let added = 0;
+  let failed = 0;
 
   try {
     const botsSnap = await db.collection('users')
@@ -9942,6 +9996,7 @@ async function addBotImagePosts() {
     const bots = [];
     botsSnap.forEach(doc => bots.push(doc.data()));
 
+    const promises = [];
     for (let i = 0; i < 30; i++) {
       const bot = bots[Math.floor(Math.random() * bots.length)];
       const caption = BOT_CAPTIONS[Math.floor(Math.random() * BOT_CAPTIONS.length)];
@@ -9952,7 +10007,7 @@ async function addBotImagePosts() {
         mediaURLs.push(`https://picsum.photos/600/800?random=${Date.now()}_${i}_${j}`);
       }
 
-      await db.collection('posts').add({
+      const postPromise = db.collection('posts').add({
         uid: bot.uid,
         type: 'image',
         mediaURL: mediaURLs[0],
@@ -9968,27 +10023,38 @@ async function addBotImagePosts() {
         boosted: false,
         isBot: true,
         createdAt: new Date(Date.now() - Math.random() * 7 * 86400000),
+      }).then(async () => {
+        try {
+          await db.collection('users').doc(bot.uid).update({
+            postsCount: firebase.firestore.FieldValue.increment(1),
+          });
+        } catch {}
       });
 
-      await db.collection('users').doc(bot.uid).update({
-        postsCount: firebase.firestore.FieldValue.increment(1),
-      });
-
-      added++;
+      promises.push(postPromise);
     }
 
+    const results = await Promise.allSettled(promises);
+    results.forEach(r => {
+      if (r.status === 'fulfilled') added++;
+      else failed++;
+    });
+
     hideLoading();
-    showToast(`${added} bot image posts added! 📷`, 'success');
+    if (added > 0) {
+      showToast(`✅ ${added} bot image posts added!${failed > 0 ? ` (${failed} failed)` : ''} 📷`, 'success');
+    } else {
+      showToast('Failed to add bot posts', 'error');
+    }
 
     APP.feedPosts = [];
     APP.feedLastDoc = null;
     APP.feedEnded = false;
   } catch (err) {
     hideLoading();
-    showToast(`Added ${added}. Error: ${err.message}`, 'warning');
+    showToast(`Error: ${err.message}`, 'warning');
   }
 }
-
 // ==================== STORY CLEANUP ====================
 
 async function cleanupExpiredStories() {
