@@ -50,7 +50,7 @@ const APP = {
   interstitialTimer: null,
   lastInterstitialTime: 0,
   adImpressions: 0,
-  darkMode: localStorage.getItem('vidr_dark_mode') !== 'true',
+  darkMode: localStorage.getItem('vidr_dark_mode') !== 'false',
   reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   isMobile: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
   listeners: [],
