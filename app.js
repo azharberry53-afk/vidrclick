@@ -5407,7 +5407,11 @@ function loadChatMessages(chatRoomId) {
         let content = '';
         if (msg.type === 'image') {
           content = `<img src="${msg.mediaURL}" alt="" style="max-width:220px;border-radius:var(--radius-md)" onerror="this.src='default-product.png'" loading="lazy">`;
-        } else if (msg.type === 'sticker') {
+        } if (msg.type === 'sticker') {
+  content = `<span class="chat-bubble-sticker" style="font-size:60px;display:block;text-align:center">${msg.sticker}</span>`;
+} if (msg.type === 'sticker_gif') {
+  content = `<img src="${msg.stickerUrl}" style="width:150px;height:150px;object-fit:contain;border-radius:12px" alt="sticker">`;
+}  else if (msg.type === 'sticker') {
           content = `<span class="chat-bubble-sticker" style="font-size:60px;display:block;text-align:center">${msg.sticker}</span>`;
         } else if (msg.type === 'post_share') {
           content = `<div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);cursor:pointer;font-size:13px" onclick="openSinglePost('${msg.postId}')">📎 Shared a post<br><span style="color:var(--primary)">View post →</span></div>`;
@@ -10147,6 +10151,99 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+const GIPHY_API_KEY = 'qnt649W2dhXZsY4buSKKjqWR3vQTAryd';
+
+async function openStickerPicker() {
+  openBottomSheet(`
+    <div class="sticker-picker">
+      <input type="text" placeholder="Search stickers..." id="stickerSearch" 
+             style="width:100%;padding:10px;background:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-md);color:var(--text-primary);margin-bottom:10px;font-size:14px"
+             oninput="searchGiphyStickers(this.value)">
+      <div class="sticker-pack-tabs">
+        <button class="sticker-pack-tab active" onclick="loadGiphyPack('cute',this)">😊 Cute</button>
+        <button class="sticker-pack-tab" onclick="loadGiphyPack('love',this)">❤️ Love</button>
+        <button class="sticker-pack-tab" onclick="loadGiphyPack('funny',this)">😂 Funny</button>
+        <button class="sticker-pack-tab" onclick="loadGiphyPack('sparkle',this)">✨ Sparkle</button>
+        <button class="sticker-pack-tab" onclick="loadEmojiPack(this)">😀 Emoji</button>
+      </div>
+      <div class="sticker-grid" id="stickerGrid">
+        <div class="loading-spinner small" style="margin:20px auto"></div>
+      </div>
+    </div>
+  `);
+  
+  loadGiphyPack('cute');
+}
+
+async function loadGiphyPack(term, btn) {
+  if (btn) {
+    document.querySelectorAll('.sticker-pack-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  
+  const grid = document.getElementById('stickerGrid');
+  grid.innerHTML = '<div class="loading-spinner small" style="margin:20px auto"></div>';
+  
+  try {
+    const url = `https://api.giphy.com/v1/stickers/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(term)}&limit=24&rating=g&bundle=messaging_non_clips`;
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    let html = '';
+    data.data.forEach(sticker => {
+      const gifUrl = sticker.images.fixed_width_small.url;
+      const originalUrl = sticker.images.original.url;
+      html += `
+        <div class="sticker-item" onclick="sendGifSticker('${originalUrl}')">
+          <img src="${gifUrl}" style="width:100%;height:100%;object-fit:contain" alt="sticker" loading="lazy">
+        </div>
+      `;
+    });
+    
+    grid.innerHTML = html || '<p style="text-align:center;padding:20px;color:var(--text-muted);grid-column:span 4">No stickers found</p>';
+  } catch (err) {
+    console.error('Giphy error:', err);
+    grid.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-muted);grid-column:span 4">Failed to load</p>';
+  }
+}
+
+const searchGiphyStickers = debounce((term) => {
+  if (term.length >= 2) loadGiphyPack(term);
+}, 500);
+
+function loadEmojiPack(btn) {
+  document.querySelectorAll('.sticker-pack-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  
+  const grid = document.getElementById('stickerGrid');
+  const emojis = ['😀','😂','🤣','😍','🥰','😎','🤩','😢','😭','😤','🤯','🥳','😏','🤔','👀','💀',
+                  '❤️','💕','💖','💗','💓','💞','💘','💝','😘','😻','💐','🌹','🎉','🎊','🎈','🎁'];
+  
+  grid.innerHTML = emojis.map(e => 
+    `<div class="sticker-item" style="font-size:32px" onclick="sendSticker('${e}')">${e}</div>`
+  ).join('');
+}
+
+async function sendGifSticker(gifUrl) {
+  closeBottomSheet();
+  if (!APP.currentChatRoom || !APP.currentChatUser) return;
+
+  try {
+    await db.collection('messages').add({
+      chatRoomId: APP.currentChatRoom,
+      senderId: APP.currentUser.uid,
+      type: 'sticker_gif',
+      stickerUrl: gifUrl,
+      read: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await updateChatRoomLastMessage(APP.currentChatRoom, '🎨 Sticker', APP.currentChatUser);
+  } catch (err) {
+    showToast('Failed to send sticker', 'error');
+  }
+}
 
 console.log('Admin, Bots, Final Systems loaded');
 console.log('=== VIDR APP FULLY LOADED ===');
