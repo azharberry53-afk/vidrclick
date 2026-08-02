@@ -1675,8 +1675,8 @@ function showInterstitialAd() {
 
 function showRewardedAd(callback) {
   // REPLACE 'YOUR_NATIVE_BANNER_KEY' with your actual Adsterra Native Banner key
-  const NATIVE_AD_KEY = 'YOUR_NATIVE_BANNER_KEY'; // e.g., 'a1b2c3d4e5f6'
-  const NATIVE_AD_SRC = '//www.topcreativeformat.com/YOUR_KEY/invoke.js'; // Your actual URL
+  const NATIVE_AD_KEY = '33a09e788da26a493e7cb3d24079d49e'; // e.g., 'a1b2c3d4e5f6'
+  const NATIVE_AD_SRC = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js'; // Your actual URL
   
   openCenterModal(`
     <div class="modal-title">📺 Watch Ad to Earn</div>
@@ -2678,74 +2678,9 @@ function renderTextMedia(post) {
 }
 
 // Adsterra config - Replace with your actual keys when ready
-const ADSTERRA_NATIVE_KEY = 'YOUR_UNIQUE_KEY_HERE'; // Get from Adsterra Native Banner
+const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e'; // Get from Adsterra Native Banner
 const ADSTERRA_NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js'; // e.g. '//pl27492847.profitableratecpm.com/YOUR_KEY/invoke.js'
 const USE_ADSTERRA = true; // Set to true when you have your real keys
-
-// Beautiful placeholder ads (rotates through different styles)
-const PLACEHOLDER_ADS = [
-  {
-    icon: '🛍️',
-    title: 'Shop the Latest Trends',
-    desc: 'Discover amazing products at unbeatable prices',
-    cta: 'Shop Now',
-    gradient: 'linear-gradient(135deg, #ff6bb5, #a78bfa)'
-  },
-  {
-    icon: '🎮',
-    title: 'Play Free Games',
-    desc: 'Thousands of fun games right in your browser',
-    cta: 'Play Free',
-    gradient: 'linear-gradient(135deg, #7dd3fc, #a78bfa)'
-  },
-  {
-    icon: '📱',
-    title: 'Get Our Mobile App',
-    desc: 'Better experience on iOS & Android',
-    cta: 'Download',
-    gradient: 'linear-gradient(135deg, #86efac, #4ade80)'
-  },
-  {
-    icon: '🎁',
-    title: 'Special Offer Just For You',
-    desc: 'Limited time deal - Don\'t miss out!',
-    cta: 'Claim Now',
-    gradient: 'linear-gradient(135deg, #fda4af, #f43f5e)'
-  },
-  {
-    icon: '✨',
-    title: 'Premium Features Await',
-    desc: 'Unlock everything with our premium plan',
-    cta: 'Try Free',
-    gradient: 'linear-gradient(135deg, #fcd34d, #f59e0b)'
-  },
-  {
-    icon: '🎬',
-    title: 'Watch Movies & TV',
-    desc: 'Unlimited streaming, no ads',
-    cta: 'Start Free Trial',
-    gradient: 'linear-gradient(135deg, #c084fc, #a855f7)'
-  },
-  {
-    icon: '💎',
-    title: 'Invest Smarter',
-    desc: 'Start with just $1 - Grow your wealth',
-    cta: 'Learn More',
-    gradient: 'linear-gradient(135deg, #67e8f9, #06b6d4)'
-  },
-  {
-    icon: '🍕',
-    title: 'Food Delivered Fast',
-    desc: 'Your favorite meals in 30 minutes',
-    cta: 'Order Now',
-    gradient: 'linear-gradient(135deg, #fca5a5, #ef4444)'
-  }
-];
-
-// Adsterra config - Replace with your actual keys when ready
-const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e'; // Get from Adsterra Native Banner
-const ADSTERRA_NATIVE_URL = ''; // e.g. '//pl27492847.profitableratecpm.com/YOUR_KEY/invoke.js'
-const USE_ADSTERRA = false; // Set to true when you have your real keys
 
 // Beautiful placeholder ads (rotates through different styles)
 const PLACEHOLDER_ADS = [
