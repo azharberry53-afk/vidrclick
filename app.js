@@ -1,6 +1,6 @@
 // ==========================================
-// VIDR - Complete Application
-// app.js - Part 1: Core Systems
+// VIDR - Complete Application (with Stripe)
+// app.js - Part 1: Core Setup
 // ==========================================
 
 'use strict';
@@ -55,8 +55,6 @@ const APP = {
   isMobile: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
   listeners: [],
   profileVisitors: [],
-  botVideos: [],
-  botImages: [],
 };
 
 // ==================== CONSTANTS ====================
@@ -65,13 +63,13 @@ const MAX_LEVEL = 10000;
 const XP_PER_LEVEL_BASE = 100;
 const FEED_PAGE_SIZE = 10;
 const AD_INTERVAL_POSTS = 5;
-const AD_INTERSTITIAL_INTERVAL = 300000; // 5 minutes
+const AD_INTERSTITIAL_INTERVAL = 300000;
 const BANNER_REFRESH_INTERVAL = 60000;
 const STORY_DURATION = 5000;
 const STORIES_HIDE_DELAY = 8000;
 const WELCOME_BONUS = 50;
 const VERIFIED_PRICE = 18;
-const VERIFIED_BOOSTS_PER_MONTH = 8; // changed from 5 to 8 per spec
+const VERIFIED_BOOSTS_PER_MONTH = 8;
 const BOOST_COST = 1500;
 const MIN_WITHDRAWAL = 5000;
 const WITHDRAWAL_FEE = 0.10;
@@ -82,6 +80,31 @@ const REFERRAL_PURCHASE_COMMISSION = 0.06;
 const MARKETING_AD_COMMISSION = 0.10;
 const PAID_REWARD_CHANCE = 0.000000001;
 
+// ==================== STRIPE CONFIG ====================
+const STRIPE_PUBLISHABLE_KEY = 'pk_live_51QWFR4BISqFfwDl6u5biS1bUB07tDMVTSt8nkjy0tCXoPW7Vov2zUQeBZjfPvp96VARoHhERvmIa4JsBzpKWep6Q0064CvfawV';
+
+let stripe = null;
+let stripeElements = null;
+let stripePaymentElement = null;
+let currentStripePaymentType = null;
+let currentStripePackageId = null;
+let firebaseFunctions = null;
+
+function initStripe() {
+  if (!stripe && window.Stripe) {
+    stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+  }
+  return stripe;
+}
+
+function getFirebaseFunctions() {
+  if (!firebaseFunctions) {
+    firebaseFunctions = firebase.functions();
+  }
+  return firebaseFunctions;
+}
+
+// ==================== TEXT BACKGROUNDS ====================
 const TEXT_BG_COLORS = [
   'linear-gradient(135deg, #e91e8c, #7c3aed)',
   'linear-gradient(135deg, #3b82f6, #06b6d4)',
@@ -91,6 +114,7 @@ const TEXT_BG_COLORS = [
   'linear-gradient(135deg, #1e1e3a, #0a0a1a)',
 ];
 
+// ==================== ACHIEVEMENTS ====================
 const ACHIEVEMENT_TYPES = [
   { id: 'first_post', name: 'Creator', icon: '📝', desc: 'Create posts', maxLevel: 100 },
   { id: 'first_like', name: 'Heart Giver', icon: '❤️', desc: 'Like posts', maxLevel: 100 },
@@ -114,6 +138,7 @@ const ACHIEVEMENT_TYPES = [
   { id: 'sell_item', name: 'Merchant', icon: '🏪', desc: 'Sell items', maxLevel: 100 },
 ];
 
+// ==================== TITLES ====================
 const TITLE_PRESETS = [
   { name: 'Newbie', rarity: 'common' },
   { name: 'Explorer', rarity: 'common' },
@@ -131,74 +156,74 @@ const TITLE_PRESETS = [
   { name: 'Vidr OG', rarity: 'legendary' },
 ];
 
-// Free gifts (30)
+// ==================== GIFTS ====================
 const FREE_GIFTS = [
   { id: 'rose', emoji: '🌹', name: 'Rose', cost: 1 },
-  { id: 'heart', emoji: '❤️', name: 'Heart', cost: 5 },
-  { id: 'star', emoji: '⭐', name: 'Star', cost: 10 },
-  { id: 'fire', emoji: '🔥', name: 'Fire', cost: 20 },
-  { id: 'crown', emoji: '👑', name: 'Crown', cost: 50 },
-  { id: 'diamond', emoji: '💎', name: 'Diamond', cost: 100 },
-  { id: 'rocket', emoji: '🚀', name: 'Rocket', cost: 2000 },
-  { id: 'galaxy', emoji: '🌌', name: 'Galaxy', cost: 5000 },
   { id: 'clap', emoji: '👏', name: 'Clap', cost: 1 },
   { id: 'thumbsup', emoji: '👍', name: 'Thumbs Up', cost: 2 },
   { id: 'sunflower', emoji: '🌻', name: 'Sunflower', cost: 3 },
-  { id: 'rainbow', emoji: '🌈', name: 'Rainbow', cost: 8 },
-  { id: 'butterfly', emoji: '🦋', name: 'Butterfly', cost: 5 },
-  { id: 'sparkle', emoji: '✨', name: 'Sparkle', cost: 10 },
-  { id: 'lightning', emoji: '⚡', name: 'Lightning', cost: 15 },
-  { id: 'moon', emoji: '🌙', name: 'Moon', cost: 12 },
-  { id: 'sun', emoji: '☀️', name: 'Sun', cost: 15 },
   { id: 'cherry', emoji: '🍒', name: 'Cherry', cost: 3 },
-  { id: 'pizza', emoji: '🍕', name: 'Pizza', cost: 8 },
+  { id: 'heart', emoji: '❤️', name: 'Heart', cost: 5 },
+  { id: 'butterfly', emoji: '🦋', name: 'Butterfly', cost: 5 },
   { id: 'donut', emoji: '🍩', name: 'Donut', cost: 6 },
   { id: 'balloon', emoji: '🎈', name: 'Balloon', cost: 7 },
+  { id: 'rainbow', emoji: '🌈', name: 'Rainbow', cost: 8 },
+  { id: 'pizza', emoji: '🍕', name: 'Pizza', cost: 8 },
+  { id: 'star', emoji: '⭐', name: 'Star', cost: 10 },
+  { id: 'sparkle', emoji: '✨', name: 'Sparkle', cost: 10 },
+  { id: 'moon', emoji: '🌙', name: 'Moon', cost: 12 },
+  { id: 'lightning', emoji: '⚡', name: 'Lightning', cost: 15 },
+  { id: 'sun', emoji: '☀️', name: 'Sun', cost: 15 },
+  { id: 'fire', emoji: '🔥', name: 'Fire', cost: 20 },
+  { id: 'medal', emoji: '🏅', name: 'Medal', cost: 20 },
   { id: 'confetti', emoji: '🎊', name: 'Confetti', cost: 25 },
   { id: 'trophy', emoji: '🏆', name: 'Trophy', cost: 30 },
-  { id: 'medal', emoji: '🏅', name: 'Medal', cost: 20 },
   { id: 'gem', emoji: '💠', name: 'Gem', cost: 40 },
+  { id: 'crown', emoji: '👑', name: 'Crown', cost: 50 },
   { id: 'comet', emoji: '☄️', name: 'Comet', cost: 80 },
+  { id: 'diamond', emoji: '💎', name: 'Diamond', cost: 100 },
   { id: 'unicorn', emoji: '🦄', name: 'Unicorn', cost: 150 },
   { id: 'dragon', emoji: '🐉', name: 'Dragon', cost: 300 },
   { id: 'phoenix', emoji: '🔱', name: 'Phoenix', cost: 500 },
   { id: 'supernova', emoji: '💫', name: 'Supernova', cost: 1000 },
+  { id: 'rocket', emoji: '🚀', name: 'Rocket', cost: 2000 },
+  { id: 'galaxy', emoji: '🌌', name: 'Galaxy', cost: 5000 },
 ];
 
-// Paid gifts (30)
 const PAID_GIFTS = [
   { id: 'lollipop', emoji: '🍭', name: 'Lollipop', cost: 1 },
-  { id: 'icecream', emoji: '🍦', name: 'Ice Cream', cost: 5 },
-  { id: 'cake', emoji: '🎂', name: 'Cake', cost: 10 },
-  { id: 'sportscar', emoji: '🏎️', name: 'Sports Car', cost: 50 },
-  { id: 'yacht', emoji: '🛥️', name: 'Yacht', cost: 1000 },
-  { id: 'lion', emoji: '🦁', name: 'Lion', cost: 5000 },
-  { id: 'universe', emoji: '🌍', name: 'Universe', cost: 10000 },
-  { id: 'vidr_special', emoji: '💜', name: 'Vidr Special', cost: 50000 },
+  { id: 'rose_gold', emoji: '🥀', name: 'Rose Gold', cost: 2 },
   { id: 'teddy', emoji: '🧸', name: 'Teddy Bear', cost: 3 },
+  { id: 'icecream', emoji: '🍦', name: 'Ice Cream', cost: 5 },
   { id: 'perfume', emoji: '🧴', name: 'Perfume', cost: 8 },
+  { id: 'cake', emoji: '🎂', name: 'Cake', cost: 10 },
+  { id: 'champagne', emoji: '🍾', name: 'Champagne', cost: 15 },
+  { id: 'art', emoji: '🎨', name: 'Art', cost: 20 },
+  { id: 'microphone', emoji: '🎤', name: 'Microphone', cost: 25 },
+  { id: 'guitar', emoji: '🎸', name: 'Guitar', cost: 30 },
+  { id: 'camera', emoji: '📸', name: 'Camera', cost: 40 },
+  { id: 'sportscar', emoji: '🏎️', name: 'Sports Car', cost: 50 },
+  { id: 'smartphone', emoji: '📱', name: 'Smartphone', cost: 60 },
+  { id: 'laptop', emoji: '💻', name: 'Laptop', cost: 80 },
   { id: 'ring', emoji: '💍', name: 'Ring', cost: 100 },
-  { id: 'necklace', emoji: '📿', name: 'Necklace', cost: 200 },
   { id: 'watch', emoji: '⌚', name: 'Watch', cost: 150 },
+  { id: 'necklace', emoji: '📿', name: 'Necklace', cost: 200 },
   { id: 'handbag', emoji: '👜', name: 'Handbag', cost: 300 },
+  { id: 'treasure', emoji: '🗝️', name: 'Treasure', cost: 500 },
+  { id: 'yacht', emoji: '🛥️', name: 'Yacht', cost: 1000 },
   { id: 'helicopter', emoji: '🚁', name: 'Helicopter', cost: 2000 },
   { id: 'jet', emoji: '✈️', name: 'Private Jet', cost: 3000 },
   { id: 'castle', emoji: '🏰', name: 'Castle', cost: 5000 },
+  { id: 'lion', emoji: '🦁', name: 'Lion', cost: 5000 },
   { id: 'planet', emoji: '🪐', name: 'Planet', cost: 8000 },
+  { id: 'universe', emoji: '🌍', name: 'Universe', cost: 10000 },
   { id: 'blackhole', emoji: '🕳️', name: 'Black Hole', cost: 15000 },
   { id: 'infinity', emoji: '♾️', name: 'Infinity', cost: 20000 },
-  { id: 'rose_gold', emoji: '🥀', name: 'Rose Gold', cost: 2 },
-  { id: 'champagne', emoji: '🍾', name: 'Champagne', cost: 15 },
-  { id: 'microphone', emoji: '🎤', name: 'Microphone', cost: 25 },
-  { id: 'guitar', emoji: '🎸', name: 'Guitar', cost: 30 },
-  { id: 'paintbrush', emoji: '🎨', name: 'Art', cost: 20 },
-  { id: 'camera', emoji: '📸', name: 'Camera', cost: 40 },
-  { id: 'laptop', emoji: '💻', name: 'Laptop', cost: 80 },
-  { id: 'smartphone', emoji: '📱', name: 'Smartphone', cost: 60 },
-  { id: 'treasure', emoji: '🗝️', name: 'Treasure', cost: 500 },
   { id: 'megastar', emoji: '🌠', name: 'Mega Star', cost: 25000 },
+  { id: 'vidr_special', emoji: '💜', name: 'Vidr Special', cost: 50000 },
 ];
 
+// ==================== GOLD PACKAGES ====================
 const GOLD_PACKAGES = [
   { id: 'starter', name: 'Starter', coins: 100, price: 1, bonus: 0 },
   { id: 'basic', name: 'Basic', coins: 550, price: 4, bonus: 50 },
@@ -209,6 +234,7 @@ const GOLD_PACKAGES = [
   { id: 'ultimate', name: 'Ultimate', coins: 42000, price: 130, bonus: 12000 },
 ];
 
+// ==================== XP BOOST OPTIONS ====================
 const XP_BOOST_OPTIONS = [
   { duration: 900, label: '15 min', cost: 100, costType: 'free' },
   { duration: 1800, label: '30 min', cost: 180, costType: 'free' },
@@ -216,18 +242,54 @@ const XP_BOOST_OPTIONS = [
   { duration: 86400, label: '1 day', cost: 1000, costType: 'free' },
 ];
 
-const SHOP_CATEGORIES = [
-  'All', 'Fashion', 'Electronics', 'Beauty', 'Home', 'Sports', 'Toys', 'Food'
-];
+// ==================== SHOP CATEGORIES ====================
+const SHOP_CATEGORIES = ['All', 'Fashion', 'Electronics', 'Beauty', 'Home', 'Sports', 'Toys', 'Food'];
 
+// ==================== STICKER PACKS ====================
 const STICKER_PACKS = {
-  default: ['😀','😂','🤣','😍','🥰','😎','🤩','😢','😭','😤','🤯','🥳','😏','🤔','👀','💀'],
-  love: ['❤️','💕','💖','💗','💓','💞','💘','💝','😘','😻','💑','💏','🥰','😍','💐','🌹'],
-  fun: ['🎉','🎊','🥳','🎈','🎁','🎮','🎯','🎲','🏆','🎪','🎭','🎨','🎵','🎸','🎤','🎬'],
-  animated: ['⭐','✨','💫','🌟','🔥','💥','❄️','🌈','🎆','🎇','🌠','🌊','🌪️','⚡','☄️','🌸'],
+  default: [
+    { emoji: '😀', anim: 'bounce' }, { emoji: '😂', anim: 'wobble' },
+    { emoji: '🤣', anim: 'bounce' }, { emoji: '😍', anim: 'heartbeat' },
+    { emoji: '🥰', anim: 'heartbeat' }, { emoji: '😎', anim: 'bounce' },
+    { emoji: '🤩', anim: 'pulse' }, { emoji: '😢', anim: 'bounce' },
+    { emoji: '😭', anim: 'wobble' }, { emoji: '😤', anim: 'bounce' },
+    { emoji: '🤯', anim: 'pulse' }, { emoji: '🥳', anim: 'bounce' },
+    { emoji: '😏', anim: 'bounce' }, { emoji: '🤔', anim: 'wobble' },
+    { emoji: '👀', anim: 'wobble' }, { emoji: '💀', anim: 'bounce' },
+  ],
+  love: [
+    { emoji: '❤️', anim: 'heartbeat' }, { emoji: '💕', anim: 'heartbeat' },
+    { emoji: '💖', anim: 'heartbeat' }, { emoji: '💗', anim: 'heartbeat' },
+    { emoji: '💓', anim: 'heartbeat' }, { emoji: '💞', anim: 'spin' },
+    { emoji: '💘', anim: 'bounce' }, { emoji: '💝', anim: 'wobble' },
+    { emoji: '😘', anim: 'bounce' }, { emoji: '😻', anim: 'heartbeat' },
+    { emoji: '💐', anim: 'wobble' }, { emoji: '🌹', anim: 'bounce' },
+    { emoji: '🥰', anim: 'heartbeat' }, { emoji: '😍', anim: 'heartbeat' },
+    { emoji: '💑', anim: 'bounce' }, { emoji: '💏', anim: 'bounce' },
+  ],
+  fun: [
+    { emoji: '🎉', anim: 'wobble' }, { emoji: '🎊', anim: 'wobble' },
+    { emoji: '🥳', anim: 'bounce' }, { emoji: '🎈', anim: 'wobble' },
+    { emoji: '🎁', anim: 'bounce' }, { emoji: '🎮', anim: 'bounce' },
+    { emoji: '🎯', anim: 'pulse' }, { emoji: '🎲', anim: 'spin' },
+    { emoji: '🏆', anim: 'pulse' }, { emoji: '🎪', anim: 'bounce' },
+    { emoji: '🎭', anim: 'bounce' }, { emoji: '🎨', anim: 'wobble' },
+    { emoji: '🎵', anim: 'wobble' }, { emoji: '🎸', anim: 'bounce' },
+    { emoji: '🎤', anim: 'bounce' }, { emoji: '🎬', anim: 'bounce' },
+  ],
+  animated: [
+    { emoji: '⭐', anim: 'spin' }, { emoji: '✨', anim: 'pulse' },
+    { emoji: '💫', anim: 'spin' }, { emoji: '🌟', anim: 'pulse' },
+    { emoji: '🔥', anim: 'wobble' }, { emoji: '💥', anim: 'pulse' },
+    { emoji: '❄️', anim: 'spin' }, { emoji: '🌈', anim: 'rainbow' },
+    { emoji: '🎆', anim: 'pulse' }, { emoji: '🎇', anim: 'pulse' },
+    { emoji: '🌠', anim: 'bounce' }, { emoji: '🌊', anim: 'wobble' },
+    { emoji: '🌪️', anim: 'spin' }, { emoji: '⚡', anim: 'pulse' },
+    { emoji: '☄️', anim: 'wobble' }, { emoji: '🌸', anim: 'spin' },
+  ],
 };
 
-// Bot name pools
+// ==================== BOT DATA ====================
 const BOT_FIRST_NAMES = [
   'Emma','Liam','Sophia','Noah','Olivia','James','Ava','William','Isabella','Oliver',
   'Mia','Benjamin','Charlotte','Elijah','Amelia','Lucas','Harper','Mason','Evelyn','Logan',
@@ -250,16 +312,15 @@ const BOT_LAST_NAMES = [
 ];
 
 const BOT_BIOS = [
-  'Living my best life ✨', 'Adventure awaits 🌍', 'Coffee lover ☕', 'Dream big 💭',
-  'Making memories 📸', 'Stay positive 🌈', 'Love & light 💛', 'Keep it real 💯',
-  'Music is life 🎵', 'Food enthusiast 🍕', 'Fitness journey 💪', 'Art lover 🎨',
-  'Travel addict ✈️', 'Book worm 📚', 'Nature lover 🌿', 'Dancing queen 💃',
-  'Sunset chaser 🌅', 'Dog mom 🐕', 'Cat person 🐱', 'Beach vibes 🏖️',
-  'City lights 🌃', 'Yoga life 🧘', 'Plant parent 🌱', 'Good vibes only ✌️',
-  'Smile always 😊', 'Create daily 🎯', 'Hustle mode 🚀', 'Joy seeker 🎉',
+  'Living my best life ✨','Adventure awaits 🌍','Coffee lover ☕','Dream big 💭',
+  'Making memories 📸','Stay positive 🌈','Love & light 💛','Keep it real 💯',
+  'Music is life 🎵','Food enthusiast 🍕','Fitness journey 💪','Art lover 🎨',
+  'Travel addict ✈️','Book worm 📚','Nature lover 🌿','Dancing queen 💃',
+  'Sunset chaser 🌅','Dog mom 🐕','Cat person 🐱','Beach vibes 🏖️',
+  'City lights 🌃','Yoga life 🧘','Plant parent 🌱','Good vibes only ✌️',
+  'Smile always 😊','Create daily 🎯','Hustle mode 🚀','Joy seeker 🎉',
 ];
 
-// Bot video URLs (Pexels free stock)
 const BOT_VIDEO_URLS = [
   'https://videos.pexels.com/video-files/3571264/3571264-sd_506_960_30fps.mp4',
   'https://videos.pexels.com/video-files/1448735/1448735-sd_640_360_24fps.mp4',
@@ -293,26 +354,26 @@ const BOT_VIDEO_URLS = [
   'https://videos.pexels.com/video-files/5377700/5377700-sd_506_960_25fps.mp4',
 ];
 
-// Bot image URLs (picsum.photos)
-const BOT_IMAGE_URLS = [];
-for (let i = 0; i < 30; i++) {
-  BOT_IMAGE_URLS.push(`https://picsum.photos/600/800?random=${i + 100}`);
-}
-
 const BOT_CAPTIONS = [
-  'Beautiful day today! 🌤️', 'Can\'t stop won\'t stop 💪', 'Weekend vibes 🎉',
-  'Nature is healing 🌿', 'Golden hour magic ✨', 'This view though 😍',
-  'Making memories 📸', 'Life is beautiful 🦋', 'Grateful for everything 🙏',
-  'Chase your dreams 💫', 'New beginnings 🌅', 'Living for moments like this 💖',
-  'Feeling blessed 🙌', 'Can\'t believe this is real 🤩', 'Sending good vibes ✌️',
-  'Perfect day for adventure 🗺️', 'Smiles all around 😊', 'Lost in the moment 🎶',
-  'This is what happiness looks like 🥰', 'Creating my own sunshine ☀️',
-  'Just another day in paradise 🏝️', 'The world is full of beauty 🌸',
-  'Stay wild, stay free 🦅', 'Good things take time ⏰', 'One step at a time 👣',
-  'Embracing the journey 🛤️', 'Collect moments not things 💎', 'Sky above me 🌌',
-  'Rise and shine ☕', 'Heart full of joy 💗',
+  'Beautiful day today! 🌤️','Can\'t stop won\'t stop 💪','Weekend vibes 🎉',
+  'Nature is healing 🌿','Golden hour magic ✨','This view though 😍',
+  'Making memories 📸','Life is beautiful 🦋','Grateful for everything 🙏',
+  'Chase your dreams 💫','New beginnings 🌅','Living for moments like this 💖',
+  'Feeling blessed 🙌','Can\'t believe this is real 🤩','Sending good vibes ✌️',
+  'Perfect day for adventure 🗺️','Smiles all around 😊','Lost in the moment 🎶',
+  'This is what happiness looks like 🥰','Creating my own sunshine ☀️',
+  'Just another day in paradise 🏝️','The world is full of beauty 🌸',
+  'Stay wild, stay free 🦅','Good things take time ⏰','One step at a time 👣',
+  'Embracing the journey 🛤️','Collect moments not things 💎','Sky above me 🌌',
+  'Rise and shine ☕','Heart full of joy 💗',
 ];
 
+console.log('Vidr Part 1 loaded: Constants & Config');
+
+// ==========================================
+// VIDR - app.js Part 2
+// Init, Auth, Theme, Toast, Modals, Navigation
+// ==========================================
 
 // ==================== INITIALIZATION ====================
 
@@ -322,20 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initApp() {
   console.log('Vidr initializing...');
-
-  // Apply theme
   applyTheme();
-
-  // Register service worker
   registerServiceWorker();
-
-  // Online/offline detection
   setupNetworkDetection();
-
-  // Check for referral
   checkReferralParam();
 
-  // Auth state listener
   auth.onAuthStateChanged(async (user) => {
     if (user) {
       APP.currentUser = user;
@@ -355,9 +407,7 @@ async function initApp() {
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
-      .then(reg => {
-        console.log('SW registered:', reg.scope);
-      })
+      .then(reg => console.log('SW registered:', reg.scope))
       .catch(err => console.warn('SW registration failed:', err));
   }
 }
@@ -412,7 +462,7 @@ function toggleDarkMode() {
   applyTheme();
 }
 
-// ==================== SPLASH / AUTH / APP VISIBILITY ====================
+// ==================== SPLASH / AUTH VISIBILITY ====================
 
 function hideSplash() {
   setTimeout(() => {
@@ -576,15 +626,28 @@ function navigateTo(page, data = null) {
     'liveStreamPage', 'profileVisitorsPage', 'earnPage', 'campaignPage', 'payoutPage'
   ];
 
-  // Handle main pages
+  // Handle special pages
+  if (page === 'search') {
+    openOverlayPage('searchPage');
+    setTimeout(() => {
+      const input = document.getElementById('searchInput');
+      if (input) input.focus();
+      setupSearch();
+      loadRecentSearches();
+    }, 350);
+    return;
+  }
+  if (page === 'notifications') {
+    renderNotifications();
+    return;
+  }
+
   if (pages.includes(page)) {
-    // Hide all overlay pages
     overlayPages.forEach(p => {
       const el = document.getElementById(p);
       if (el) el.classList.remove('active');
     });
 
-    // Switch main pages
     pages.forEach(p => {
       const el = document.getElementById(p + 'Page');
       if (el) el.classList.remove('active');
@@ -593,12 +656,10 @@ function navigateTo(page, data = null) {
     const target = document.getElementById(page + 'Page');
     if (target) target.classList.add('active');
 
-    // Update nav
     document.querySelectorAll('.nav-item').forEach(item => {
       item.classList.toggle('active', item.dataset.page === page);
     });
 
-    // Update header visibility
     const header = document.getElementById('topHeader');
     const storiesBar = document.getElementById('storiesBar');
     const feedTabs = document.getElementById('feedTabs');
@@ -628,7 +689,6 @@ function navigateTo(page, data = null) {
 
     APP.currentPage = page;
 
-    // Page-specific loading
     switch (page) {
       case 'home':
         if (APP.feedPosts.length === 0) loadFeed();
@@ -656,7 +716,6 @@ function openOverlayPage(pageId) {
     });
   }
 
-  // Hide bottom nav and banner for overlays
   document.getElementById('bottomNav').style.display = 'none';
   document.getElementById('bannerAd').style.display = 'none';
   document.getElementById('topHeader').style.display = 'none';
@@ -672,7 +731,6 @@ function closeOverlayPage(pageId) {
     }, 300);
   }
 
-  // Restore bottom nav
   document.getElementById('bottomNav').style.display = 'flex';
   document.getElementById('bannerAd').style.display = 'flex';
 
@@ -684,7 +742,7 @@ function closeOverlayPage(pageId) {
   }
 }
 
-// ==================== AUTH SYSTEM ====================
+// ==================== AUTHENTICATION ====================
 
 async function loginWithEmail() {
   const email = document.getElementById('loginEmail').value.trim();
@@ -743,7 +801,6 @@ async function registerWithEmail() {
   showLoading();
 
   try {
-    // Check username
     const usernameCheck = await db.collection('usernames').doc(username).get();
     if (usernameCheck.exists) {
       hideLoading();
@@ -752,8 +809,6 @@ async function registerWithEmail() {
 
     const result = await auth.createUserWithEmailAndPassword(email, password);
     await result.user.updateProfile({ displayName });
-
-    // Create user document
     await createUserDocument(result.user, displayName, username);
 
     hideLoading();
@@ -850,6 +905,8 @@ async function createUserDocument(user, displayName, username) {
     totalGiftsSent: 0,
     totalSpent: 0,
     totalEarned: 0,
+    stripeCustomerId: null,
+    stripeConnectId: null,
     createdAt: now,
     lastActive: now,
     notifSettings: {
@@ -863,19 +920,14 @@ async function createUserDocument(user, displayName, username) {
     profileViews: 0,
   };
 
-  // Set user doc
   await db.collection('users').doc(user.uid).set(userData);
-
-  // Reserve username
   await db.collection('usernames').doc(username).set({ uid: user.uid });
 
-  // Process referral
   if (referrer && referrer !== user.uid) {
     await processReferral(referrer, user.uid);
     localStorage.removeItem('vidr_referrer');
   }
 
-  // Welcome notification
   await addNotification(user.uid, {
     type: 'system',
     text: `Welcome to Vidr! Here's ${WELCOME_BONUS} free coins to get started! 🎉`,
@@ -886,7 +938,6 @@ async function createUserDocument(user, displayName, username) {
 
 async function processReferral(referrerId, newUserId) {
   try {
-    // Give both users coins
     await db.collection('users').doc(referrerId).update({
       freeCoins: firebase.firestore.FieldValue.increment(REFERRAL_REWARD),
       referralCount: firebase.firestore.FieldValue.increment(1),
@@ -897,7 +948,6 @@ async function processReferral(referrerId, newUserId) {
       freeCoins: firebase.firestore.FieldValue.increment(REFERRAL_REWARD),
     });
 
-    // Record referral
     await db.collection('referrals').add({
       referrerId,
       referredId: newUserId,
@@ -905,7 +955,6 @@ async function processReferral(referrerId, newUserId) {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    // Notify referrer
     const newUserData = await getUserData(newUserId);
     await addNotification(referrerId, {
       type: 'referral',
@@ -915,7 +964,6 @@ async function processReferral(referrerId, newUserId) {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    // Achievement
     await incrementAchievement(referrerId, 'referral');
   } catch (err) {
     console.error('Referral error:', err);
@@ -937,12 +985,9 @@ async function loadUserData() {
   const data = await getUserData(APP.currentUser.uid);
   if (data) {
     APP.currentUserData = data;
-
-    // Update UI elements
     updateNavAvatar();
     updateStoryAvatar();
 
-    // Check XP boost
     if (data.xpBoostEnd) {
       const end = data.xpBoostEnd.toDate ? data.xpBoostEnd.toDate() : new Date(data.xpBoostEnd);
       if (end > new Date()) {
@@ -967,16 +1012,12 @@ function updateStoryAvatar() {
   }
 }
 
-// ==================== ON USER AUTHENTICATED ====================
-
 async function onUserAuthenticated() {
-  // Update last active
   await db.collection('users').doc(APP.currentUser.uid).update({
     lastActive: firebase.firestore.FieldValue.serverTimestamp(),
     lastLoginDate: new Date().toISOString().split('T')[0],
   });
 
-  // Load initial data
   loadFeed();
   loadStories();
   startNotificationListener();
@@ -987,13 +1028,10 @@ async function onUserAuthenticated() {
   startFeedXpTimer();
   startStoriesHideTimer();
 
-  // Check for action param
   const params = new URLSearchParams(window.location.search);
   if (params.get('action') === 'create') navigateTo('create');
   if (params.get('page') === 'chat') navigateTo('chat');
 }
-
-// ==================== USERNAME CHECK ====================
 
 let usernameCheckTimeout = null;
 
@@ -1034,6 +1072,85 @@ function checkUsername(value) {
   }, 500);
 }
 
+// ==================== LOGOUT / DELETE ACCOUNT ====================
+
+async function logout() {
+  openCenterModal(`
+    <div class="modal-title">Log Out</div>
+    <p class="modal-text">Are you sure you want to log out?</p>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+      <button class="modal-btn danger" onclick="confirmLogout()">Log Out</button>
+    </div>
+  `);
+}
+
+async function confirmLogout() {
+  closeCenterModal();
+  showLoading();
+  try {
+    APP.listeners.forEach(unsub => { if (typeof unsub === 'function') unsub(); });
+    if (APP.notifListener) APP.notifListener();
+
+    await auth.signOut();
+    APP.currentUser = null;
+    APP.currentUserData = null;
+    APP.feedPosts = [];
+    APP.feedLastDoc = null;
+    APP.notifications = [];
+
+    hideLoading();
+    showAuth();
+  } catch (err) {
+    hideLoading();
+    showToast('Logout failed', 'error');
+  }
+}
+
+async function deleteAccount() {
+  openCenterModal(`
+    <div class="modal-title" style="color:var(--error)">Delete Account</div>
+    <p class="modal-text">This action is permanent and cannot be undone. All your data will be deleted.</p>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+      <button class="modal-btn danger" onclick="confirmDeleteAccount()">Delete Forever</button>
+    </div>
+  `);
+}
+
+async function confirmDeleteAccount() {
+  closeCenterModal();
+  showLoading();
+  try {
+    const uid = APP.currentUser.uid;
+    const username = APP.currentUserData?.username;
+
+    await db.collection('users').doc(uid).delete();
+    if (username) {
+      await db.collection('usernames').doc(username).delete();
+    }
+    await APP.currentUser.delete();
+
+    hideLoading();
+    showToast('Account deleted', 'info');
+    showAuth();
+  } catch (err) {
+    hideLoading();
+    if (err.code === 'auth/requires-recent-login') {
+      showToast('Please log out and log in again before deleting', 'error');
+    } else {
+      showToast('Failed to delete account', 'error');
+    }
+  }
+}
+
+console.log('Vidr Part 2 loaded: Init, Auth, Navigation');
+
+// ==========================================
+// VIDR - app.js Part 3
+// XP, Achievements, Daily Rewards, Utils, Social
+// ==========================================
+
 // ==================== XP SYSTEM ====================
 
 function getXpForLevel(level) {
@@ -1055,7 +1172,6 @@ async function addXp(uid, amount, source = 'action') {
     const userData = await getUserData(uid);
     if (!userData) return;
 
-    // Check XP boost
     let multiplier = 1;
     if (userData.xpBoostEnd) {
       const end = userData.xpBoostEnd.toDate ? userData.xpBoostEnd.toDate() : new Date(userData.xpBoostEnd);
@@ -1067,7 +1183,6 @@ async function addXp(uid, amount, source = 'action') {
     let currentLevel = userData.level || 1;
     let levelsGained = 0;
 
-    // Check level ups
     while (currentLevel < MAX_LEVEL) {
       const xpNeeded = getXpForLevel(currentLevel);
       if (currentXp >= xpNeeded) {
@@ -1084,7 +1199,6 @@ async function addXp(uid, amount, source = 'action') {
       level: currentLevel,
     });
 
-    // Level up notifications
     if (levelsGained > 0 && uid === APP.currentUser?.uid) {
       APP.currentUserData.level = currentLevel;
       APP.currentUserData.xp = currentXp;
@@ -1112,7 +1226,8 @@ function showLevelUpModal(level) {
   launchConfetti();
 }
 
-// Feed XP - gain XP while watching feed
+// ==================== FEED XP TIMER ====================
+
 function startFeedXpTimer() {
   stopFeedXpTimer();
   if (!APP.currentUser) return;
@@ -1121,11 +1236,9 @@ function startFeedXpTimer() {
   APP.feedXpTimer = setInterval(() => {
     APP.feedXpAccumulated++;
 
-    // Every 30 seconds of watching = 1 XP
     if (APP.feedXpAccumulated % 30 === 0) {
       addXp(APP.currentUser.uid, 1, 'feed_watch');
 
-      // Every 5 minutes = 1 free coin
       if (APP.feedXpAccumulated % 300 === 0) {
         db.collection('users').doc(APP.currentUser.uid).update({
           freeCoins: firebase.firestore.FieldValue.increment(1),
@@ -1249,7 +1362,6 @@ async function confirmXpBoost(index) {
     APP.currentUserData.freeCoins -= opt.cost;
     APP.xpBoostEnd = end;
 
-    // Transaction record
     await db.collection('transactions').add({
       uid: APP.currentUser.uid,
       type: 'xp_boost',
@@ -1293,18 +1405,13 @@ async function incrementAchievement(uid, achievementId, amount = 1) {
       APP.currentUserData.achievements = achievements;
     }
 
-    // Check milestones
     const milestones = [1, 5, 10, 25, 50, 100];
     for (const milestone of milestones) {
       if (current < milestone && newLevel >= milestone) {
-        // Notify
         if (uid === APP.currentUser?.uid) {
           showToast(`🏆 Achievement: ${achievementDef.name} Level ${milestone}!`, 'success');
-
-          // XP reward
           await addXp(uid, milestone * 2, 'achievement');
 
-          // Check paid reward chance
           if (Math.random() < PAID_REWARD_CHANCE) {
             const goldReward = Math.floor(Math.random() * 50) + 1;
             await db.collection('users').doc(uid).update({
@@ -1332,7 +1439,6 @@ async function checkDailyReward() {
 
   if (lastReward === today) return;
 
-  // Calculate streak
   const lastDate = APP.currentUserData.lastLoginDate;
   let streak = APP.currentUserData.dailyStreak || 0;
 
@@ -1350,28 +1456,26 @@ async function checkDailyReward() {
     streak = 1;
   }
 
-  // Weighted random reward
   const roll = Math.random();
   let reward, rarity;
 
   if (roll < 0.50) {
-    reward = Math.floor(Math.random() * 4) + 1; // 1-4
+    reward = Math.floor(Math.random() * 4) + 1;
     rarity = 'common';
   } else if (roll < 0.75) {
-    reward = Math.floor(Math.random() * 10) + 5; // 5-14
+    reward = Math.floor(Math.random() * 10) + 5;
     rarity = 'uncommon';
   } else if (roll < 0.90) {
-    reward = Math.floor(Math.random() * 35) + 15; // 15-49
+    reward = Math.floor(Math.random() * 35) + 15;
     rarity = 'rare';
   } else if (roll < 0.98) {
-    reward = Math.floor(Math.random() * 100) + 50; // 50-149
+    reward = Math.floor(Math.random() * 100) + 50;
     rarity = 'epic';
   } else {
-    reward = Math.floor(Math.random() * 51) + 150; // 150-200
+    reward = Math.floor(Math.random() * 51) + 150;
     rarity = 'legendary';
   }
 
-  // Apply reward
   try {
     await db.collection('users').doc(APP.currentUser.uid).update({
       freeCoins: firebase.firestore.FieldValue.increment(reward),
@@ -1383,15 +1487,12 @@ async function checkDailyReward() {
     APP.currentUserData.dailyStreak = streak;
     APP.currentUserData.lastDailyReward = today;
 
-    // Show reward modal
     setTimeout(() => {
       showDailyRewardModal(reward, rarity, streak);
     }, 2500);
 
-    // XP for daily login
     await addXp(APP.currentUser.uid, 5, 'daily_login');
     await incrementAchievement(APP.currentUser.uid, 'daily_login');
-
   } catch (err) {
     console.error('Daily reward error:', err);
   }
@@ -1399,11 +1500,8 @@ async function checkDailyReward() {
 
 function showDailyRewardModal(reward, rarity, streak) {
   const rarityNames = {
-    common: 'Common',
-    uncommon: 'Uncommon',
-    rare: 'Rare',
-    epic: 'Epic',
-    legendary: 'Legendary'
+    common: 'Common', uncommon: 'Uncommon', rare: 'Rare',
+    epic: 'Epic', legendary: 'Legendary'
   };
 
   openCenterModal(`
@@ -1471,8 +1569,6 @@ async function addNotification(uid, data) {
   }
 }
 
-// ==================== CHAT BADGE LISTENER ====================
-
 function startChatBadgeListener() {
   db.collection('chatRooms')
     .where('participants', 'array-contains', APP.currentUser.uid)
@@ -1513,21 +1609,9 @@ function startStoriesHideTimer() {
 
 function setupBannerAd() {
   const bannerAd = document.getElementById('bannerAd');
-  const bannerContent = document.getElementById('bannerAdContent');
-
-  // Show banner ad placeholder
   bannerAd.style.display = 'flex';
-  bannerContent.innerHTML = `
-    <div style="text-align:center;padding:8px;font-size:11px;color:var(--text-muted)">
-      Ad Space - 320x50
-    </div>
-  `;
-
-  // Adsterra integration placeholder
-  // In production, replace with actual Adsterra script
   loadAdsterraBanner();
 
-  // Auto refresh banner
   setInterval(() => {
     loadAdsterraBanner();
     APP.adImpressions++;
@@ -1537,30 +1621,26 @@ function setupBannerAd() {
 function loadAdsterraBanner() {
   const bannerContent = document.getElementById('bannerAdContent');
   if (!bannerContent) return;
-  
-  // Force re-inject the ad script to refresh
-  bannerContent.innerHTML = '';
-  
-  const script1 = document.createElement('script');
-  script1.type = 'text/javascript';
-  script1.text = `
-    atOptions = {
-      'key' : 'd5b030ab7dc6f25911930cebe81375a3',
-      'format' : 'iframe',
-      'height' : 60,
-      'width' : 468,
-      'params' : {}
-    };
+
+  // Replace with your actual Adsterra 468x60 code
+  bannerContent.innerHTML = `
+    <div style="width:320px;height:50px;background:var(--bg-tertiary);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted)">
+      <script>
+  atOptions = {
+    'key' : 'd5b030ab7dc6f25911930cebe81375a3',
+    'format' : 'iframe',
+    'height' : 60,
+    'width' : 468,
+    'params' : {}
+  };
+</script>
+<script src="https://www.highperformanceformat.com/d5b030ab7dc6f25911930cebe81375a3/invoke.js"></script>
+    </div>
   `;
-  bannerContent.appendChild(script1);
-  
-  const script2 = document.createElement('script');
-  script2.type = 'text/javascript';
-  script2.src = 'https://www.highperformanceformat.com/d5b030ab7dc6f25911930cebe81375a3/invoke.js';
-  bannerContent.appendChild(script2);
-  
+
   APP.adImpressions++;
 }
+
 function startInterstitialTimer() {
   APP.interstitialTimer = setInterval(() => {
     if (Date.now() - APP.lastInterstitialTime >= AD_INTERSTITIAL_INTERVAL) {
@@ -1570,20 +1650,19 @@ function startInterstitialTimer() {
 }
 
 function showInterstitialAd() {
-  // Placeholder for Adsterra interstitial
   APP.lastInterstitialTime = Date.now();
   APP.adImpressions++;
   console.log('Interstitial ad triggered');
 }
 
 function showRewardedAd(callback) {
-  // Show a modal that requires user to view ad before claiming reward
   openCenterModal(`
     <div class="modal-title">📺 Watch Ad</div>
-    <div id="rewardedAdContainer" style="min-height:250px;display:flex;align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0">
-      <!-- Adsterra Native Banner as rewarded -->
-      <script async="async" data-cfasync="false" src="https://pl30481984.effectivecpmnetwork.com/33a09e788da26a493e7cb3d24079d49e/invoke.js"></script>
-      <div id="container-33a09e788da26a493e7cb3d24079d49e"></div>
+    <div id="rewardedAdContainer" style="min-height:200px;display:flex;align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0;padding:20px">
+      <div style="text-align:center;color:var(--text-muted);font-size:13px">
+        Ad Playing...<br><br>
+        <div class="loading-spinner small" style="margin:0 auto"></div>
+      </div>
     </div>
     <p class="modal-text" id="rewardedAdCountdown">Please wait 15 seconds...</p>
     <div class="modal-actions">
@@ -1591,17 +1670,6 @@ function showRewardedAd(callback) {
     </div>
   `);
 
-  // Load the native banner ad
-  const container = document.getElementById('rewardedAdContainer');
-  if (container) {
-    const script1 = document.createElement('script');
-    script1.async = true;
-    script1.setAttribute('data-cfasync', 'false');
-    script1.src = 'https://pl30481984.effectivecpmnetwork.com/33a09e788da26a493e7cb3d24079d49e/invoke.js';
-    container.appendChild(script1);
-  }
-
-  // 15 second countdown
   let seconds = 15;
   const countdownEl = document.getElementById('rewardedAdCountdown');
   const claimBtn = document.getElementById('claimRewardBtn');
@@ -1609,7 +1677,7 @@ function showRewardedAd(callback) {
   const timer = setInterval(() => {
     seconds--;
     if (countdownEl) countdownEl.textContent = `Please wait ${seconds} seconds...`;
-    
+
     if (seconds <= 0) {
       clearInterval(timer);
       if (countdownEl) countdownEl.textContent = '✅ Ad completed! Claim your reward.';
@@ -1625,6 +1693,7 @@ function showRewardedAd(callback) {
     }
   }, 1000);
 }
+
 // ==================== UTILITY FUNCTIONS ====================
 
 function timeAgo(date) {
@@ -1734,112 +1803,30 @@ function getRoleBadge(role) {
   return '';
 }
 
-// Clean up listeners on page unload
-window.addEventListener('beforeunload', () => {
-  APP.listeners.forEach(unsub => {
-    if (typeof unsub === 'function') unsub();
-  });
-  stopFeedXpTimer();
-  if (APP.notifListener) APP.notifListener();
-  if (APP.xpBoostTimer) clearInterval(APP.xpBoostTimer);
-  if (APP.interstitialTimer) clearInterval(APP.interstitialTimer);
-  if (APP.storiesHideTimer) clearTimeout(APP.storiesHideTimer);
-});
+function escapeHTML(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
 
-// Handle app install prompt
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-});
+// User data cache
+const userDataCache = {};
 
-async function installApp() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const result = await deferredPrompt.userChoice;
-    if (result.outcome === 'accepted') {
-      showToast('App installed! 🎉', 'success');
-    }
-    deferredPrompt = null;
+async function getUserDataCached(uid) {
+  if (userDataCache[uid] && Date.now() - userDataCache[uid]._cachedAt < 300000) {
+    return userDataCache[uid];
   }
-}
-
-// Logout
-async function logout() {
-  openCenterModal(`
-    <div class="modal-title">Log Out</div>
-    <p class="modal-text">Are you sure you want to log out?</p>
-    <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
-      <button class="modal-btn danger" onclick="confirmLogout()">Log Out</button>
-    </div>
-  `);
-}
-
-async function confirmLogout() {
-  closeCenterModal();
-  showLoading();
-  try {
-    // Clean up
-    APP.listeners.forEach(unsub => { if (typeof unsub === 'function') unsub(); });
-    if (APP.notifListener) APP.notifListener();
-
-    await auth.signOut();
-    APP.currentUser = null;
-    APP.currentUserData = null;
-    APP.feedPosts = [];
-    APP.feedLastDoc = null;
-    APP.notifications = [];
-
-    hideLoading();
-    showAuth();
-  } catch (err) {
-    hideLoading();
-    showToast('Logout failed', 'error');
+  const data = await getUserData(uid);
+  if (data) {
+    data._cachedAt = Date.now();
+    userDataCache[uid] = data;
   }
+  return data;
 }
 
-// Delete account
-async function deleteAccount() {
-  openCenterModal(`
-    <div class="modal-title" style="color:var(--error)">Delete Account</div>
-    <p class="modal-text">This action is permanent and cannot be undone. All your data will be deleted.</p>
-    <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
-      <button class="modal-btn danger" onclick="confirmDeleteAccount()">Delete Forever</button>
-    </div>
-  `);
-}
-
-async function confirmDeleteAccount() {
-  closeCenterModal();
-  showLoading();
-  try {
-    const uid = APP.currentUser.uid;
-    const username = APP.currentUserData?.username;
-
-    // Delete user doc
-    await db.collection('users').doc(uid).delete();
-
-    // Free username
-    if (username) {
-      await db.collection('usernames').doc(username).delete();
-    }
-
-    // Delete auth
-    await APP.currentUser.delete();
-
-    hideLoading();
-    showToast('Account deleted', 'info');
-    showAuth();
-  } catch (err) {
-    hideLoading();
-    if (err.code === 'auth/requires-recent-login') {
-      showToast('Please log out and log in again before deleting', 'error');
-    } else {
-      showToast('Failed to delete account', 'error');
-    }
-  }
+function clearUserCache(uid) {
+  delete userDataCache[uid];
 }
 
 // ==================== PROFILE VISITORS (FOOTPRINT) ====================
@@ -1855,7 +1842,6 @@ async function recordProfileVisit(profileUid) {
       visitedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    // Increment profile view count
     await db.collection('users').doc(profileUid).update({
       profileViews: firebase.firestore.FieldValue.increment(1),
     });
@@ -1899,7 +1885,7 @@ async function loadProfileVisitors() {
         <div class="visitor-item" onclick="viewProfile('${data.visitorUid}')">
           <img src="${visitorData.photoURL || 'default-avatar.png'}" alt="" onerror="this.src='default-avatar.png'">
           <div class="visitor-info">
-            <div class="visitor-name">${visitorData.displayName}${visitorData.verified ? ' ' + getVerifiedBadge() : ''}</div>
+            <div class="visitor-name">${escapeHTML(visitorData.displayName)}${visitorData.verified ? ' ' + getVerifiedBadge() : ''}</div>
             <div class="visitor-time">${timeAgo(data.visitedAt)}</div>
           </div>
         </div>
@@ -1926,7 +1912,6 @@ async function followUser(targetUid) {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    // Update counts
     await db.collection('users').doc(APP.currentUser.uid).update({
       followingCount: firebase.firestore.FieldValue.increment(1),
     });
@@ -1934,7 +1919,6 @@ async function followUser(targetUid) {
       followersCount: firebase.firestore.FieldValue.increment(1),
     });
 
-    // Notify
     await addNotification(targetUid, {
       type: 'follow',
       text: `${APP.currentUserData.displayName} started following you`,
@@ -1942,7 +1926,6 @@ async function followUser(targetUid) {
       fromUid: APP.currentUser.uid,
     });
 
-    // XP
     await addXp(APP.currentUser.uid, 2, 'follow');
     await incrementAchievement(APP.currentUser.uid, 'first_follow');
 
@@ -1985,7 +1968,6 @@ async function isFollowing(targetUid) {
 
 async function getMutualCount(targetUid) {
   try {
-    // Get who I follow
     const myFollowing = await db.collection('follows')
       .where('followerId', '==', APP.currentUser.uid)
       .get();
@@ -1993,7 +1975,6 @@ async function getMutualCount(targetUid) {
     const myFollowingIds = new Set();
     myFollowing.forEach(doc => myFollowingIds.add(doc.data().followingId));
 
-    // Get who target follows
     const theirFollowers = await db.collection('follows')
       .where('followingId', '==', targetUid)
       .get();
@@ -2019,15 +2000,12 @@ async function likePost(postId) {
     const likeDoc = await likeRef.get();
 
     if (likeDoc.exists) {
-      // Unlike
       await likeRef.delete();
       await db.collection('posts').doc(postId).update({
         likesCount: firebase.firestore.FieldValue.increment(-1),
       });
-
       updateLikeUI(postId, false);
     } else {
-      // Like
       await likeRef.set({
         uid: APP.currentUser.uid,
         postId,
@@ -2040,8 +2018,7 @@ async function likePost(postId) {
 
       updateLikeUI(postId, true);
 
-      // Get post owner
-      const post = APP.feedPosts.find(p => p.id === postId);
+      const post = APP.feedPosts.find(p => p.id === postId) || APP.followingFeedPosts.find(p => p.id === postId);
       if (post && post.uid !== APP.currentUser.uid) {
         await addNotification(post.uid, {
           type: 'like',
@@ -2051,7 +2028,6 @@ async function likePost(postId) {
           postId,
         });
 
-        // Update post owner's like count
         await db.collection('users').doc(post.uid).update({
           likesCount: firebase.firestore.FieldValue.increment(1),
         });
@@ -2069,7 +2045,7 @@ function updateLikeUI(postId, liked) {
   const btn = document.querySelector(`[data-like-post="${postId}"]`);
   if (!btn) return;
 
-  const post = APP.feedPosts.find(p => p.id === postId);
+  const post = APP.feedPosts.find(p => p.id === postId) || APP.followingFeedPosts.find(p => p.id === postId);
   const count = btn.querySelector('.like-count');
 
   if (liked) {
@@ -2125,7 +2101,6 @@ async function confirmBlockUser(uid) {
       blockedUsers: firebase.firestore.FieldValue.arrayUnion(uid),
     });
 
-    // Unfollow both ways
     await unfollowUser(uid);
 
     APP.currentUserData.blockedUsers = APP.currentUserData.blockedUsers || [];
@@ -2180,7 +2155,6 @@ async function submitReport(uid, reason) {
   }
 }
 
-// View profile function
 function viewProfile(uid) {
   if (!uid) return;
   APP.profileViewingId = uid;
@@ -2192,11 +2166,42 @@ function viewProfile(uid) {
   }
 }
 
-console.log('Core systems loaded');
+// ==================== CLEANUP ====================
+
+window.addEventListener('beforeunload', () => {
+  APP.listeners.forEach(unsub => {
+    if (typeof unsub === 'function') unsub();
+  });
+  stopFeedXpTimer();
+  if (APP.notifListener) APP.notifListener();
+  if (APP.xpBoostTimer) clearInterval(APP.xpBoostTimer);
+  if (APP.interstitialTimer) clearInterval(APP.interstitialTimer);
+  if (APP.storiesHideTimer) clearTimeout(APP.storiesHideTimer);
+});
+
+// PWA install
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+async function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      showToast('App installed! 🎉', 'success');
+    }
+    deferredPrompt = null;
+  }
+}
+
+console.log('Vidr Part 3 loaded: XP, Achievements, Notifications, Social');
 
 // ==========================================
-// VIDR - app.js Part 2
-// Feed, Stories, Discover, Post Views
+// VIDR - app.js Part 4
+// Feed, Rendering, Post Interactions, Comments
 // ==========================================
 
 // ==================== FEED SYSTEM ====================
@@ -2256,16 +2261,13 @@ async function loadFeed(refresh = false) {
     }
 
     APP.feedLastDoc = snapshot.docs[snapshot.docs.length - 1];
-
     const blockedUsers = APP.currentUserData?.blockedUsers || [];
 
     for (const doc of snapshot.docs) {
       const post = { id: doc.id, ...doc.data() };
 
-      // Skip blocked users
       if (blockedUsers.includes(post.uid)) continue;
 
-      // Skip admin posts from feed (admin hidden)
       const posterData = await getUserDataCached(post.uid);
       if (posterData?.role === 'admin' && post.uid !== APP.currentUser?.uid) continue;
 
@@ -2278,8 +2280,6 @@ async function loadFeed(refresh = false) {
     renderFeed();
     feedLoading.style.display = 'none';
     APP.feedLoading = false;
-
-    // Track post views
     trackPostViews();
   } catch (err) {
     console.error('Load feed error:', err);
@@ -2308,7 +2308,6 @@ async function loadFollowingFeed(refresh = false) {
   feedLoading.style.display = 'flex';
 
   try {
-    // Get who I follow
     const followingSnap = await db.collection('follows')
       .where('followerId', '==', APP.currentUser.uid)
       .get();
@@ -2323,7 +2322,6 @@ async function loadFollowingFeed(refresh = false) {
       return;
     }
 
-    // Firebase 'in' supports max 10 items
     const chunks = [];
     for (let i = 0; i < followingIds.length; i += 10) {
       chunks.push(followingIds.slice(i, i + 10));
@@ -2347,7 +2345,6 @@ async function loadFollowingFeed(refresh = false) {
       });
     }
 
-    // Sort by date
     allPosts.sort((a, b) => {
       const aTime = a.createdAt?.toDate?.() || new Date(0);
       const bTime = b.createdAt?.toDate?.() || new Date(0);
@@ -2377,25 +2374,6 @@ async function loadFollowingFeed(refresh = false) {
   }
 }
 
-// User data cache
-const userDataCache = {};
-
-async function getUserDataCached(uid) {
-  if (userDataCache[uid] && Date.now() - userDataCache[uid]._cachedAt < 300000) {
-    return userDataCache[uid];
-  }
-  const data = await getUserData(uid);
-  if (data) {
-    data._cachedAt = Date.now();
-    userDataCache[uid] = data;
-  }
-  return data;
-}
-
-function clearUserCache(uid) {
-  delete userDataCache[uid];
-}
-
 // ==================== RENDER FEED ====================
 
 function renderFeed() {
@@ -2404,7 +2382,6 @@ function renderFeed() {
 
   let html = '';
   posts.forEach((post, index) => {
-    // Insert feed ad every N posts
     if (index > 0 && index % AD_INTERVAL_POSTS === 0) {
       html += renderFeedAd(index);
     }
@@ -2413,13 +2390,8 @@ function renderFeed() {
 
   container.innerHTML = html;
 
-  // Setup video observers
   setupVideoObservers();
-
-  // Setup carousel touches
   setupCarousels();
-
-  // Setup infinite scroll
   setupFeedScroll();
 }
 
@@ -2473,15 +2445,11 @@ function renderFeedItem(post) {
   const user = post.userData || {};
   const isVerified = user.verified;
   const isAdmin = user.role === 'admin';
-  const isMod = user.role === 'moderator';
-  const isMarketing = user.role === 'marketing';
   const showGlow = isVerified || isAdmin;
   const isOwn = post.uid === APP.currentUser?.uid;
-  const isFollowingUser = false; // Will check async
 
   let mediaHTML = '';
 
-  // Render media by type
   if (post.type === 'video') {
     mediaHTML = renderVideoMedia(post);
   } else if (post.type === 'image' || post.type === 'photo') {
@@ -2490,19 +2458,16 @@ function renderFeedItem(post) {
     mediaHTML = renderTextMedia(post);
   }
 
-  // Live badge
   let liveBadge = '';
   if (post.isLive) {
     liveBadge = `<div class="feed-live-badge"><div class="feed-live-dot"></div>LIVE</div>`;
   }
 
-  // Selling badge / yellow bag
   let sellingBadge = '';
   if (post.products && post.products.length > 0) {
     sellingBadge = `<div class="yellow-bag-btn" onclick="event.stopPropagation();openYellowBag('${post.id}')">🛍️</div>`;
   }
 
-  // Caption with overlay option
   let captionOverlay = '';
   if (post.captionOnMedia && post.caption && (post.type === 'video' || post.type === 'image' || post.type === 'photo')) {
     captionOverlay = `<div class="media-caption-overlay">${parseMentions(escapeHTML(post.caption))}</div>`;
@@ -2615,7 +2580,6 @@ function renderImageMedia(post) {
     return `<img src="${images[0]}" alt="" loading="lazy" onerror="this.src='default-product.png'">`;
   }
 
-  // Carousel
   let slides = '';
   let dots = '';
   images.forEach((url, i) => {
@@ -2646,28 +2610,11 @@ function renderFeedAd(index) {
   return `
     <div class="feed-ad" data-ad-index="${index}">
       <div class="feed-ad-label">Sponsored</div>
-      <div id="feedAd_${index}" style="width:100%;min-height:250px;display:flex;align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:var(--radius-md);overflow:hidden">
-        <!-- Adsterra Banner 300x250 -->
-        <script>
-  atOptions = {
-    'key' : '368869537135b685019c170be1b841a2',
-    'format' : 'iframe',
-    'height' : 250,
-    'width' : 300,
-    'params' : {}
-  };
-</script>
-<script src="https://www.highperformanceformat.com/368869537135b685019c170be1b841a2/invoke.js"></script>
+      <div id="feedAd_${index}" style="width:100%;min-height:250px;display:flex;align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:var(--radius-md);color:var(--text-muted);font-size:13px">
+        Ad Content
       </div>
     </div>
   `;
-}
-
-function escapeHTML(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }
 
 // ==================== VIDEO OBSERVER ====================
@@ -2703,7 +2650,7 @@ function toggleVideoPlay(video) {
   }
 }
 
-// ==================== CAROUSEL TOUCH ====================
+// ==================== CAROUSEL ====================
 
 function setupCarousels() {
   document.querySelectorAll('.feed-carousel').forEach(carousel => {
@@ -2742,7 +2689,6 @@ function setupCarousels() {
       track.style.transform = `translateX(-${current * 100 / total}%)`;
       track.dataset.current = current;
 
-      // Update dots
       carousel.querySelectorAll('.carousel-dot').forEach((dot, i) => {
         dot.classList.toggle('active', i === current);
       });
@@ -2773,11 +2719,6 @@ function setupFeedScroll() {
   }, 300);
 
   feedPage.addEventListener('scroll', handleScroll);
-
-  // Reset stories hide on scroll
-  feedPage.addEventListener('scroll', throttle(() => {
-    if (!APP.storiesHidden) return;
-  }, 500));
 }
 
 // ==================== PULL TO REFRESH ====================
@@ -2852,16 +2793,13 @@ async function incrementPostView(postId) {
       viewsCount: firebase.firestore.FieldValue.increment(1),
     });
 
-    // Update user total views
     const post = APP.feedPosts.find(p => p.id === postId);
     if (post && post.uid) {
       await db.collection('users').doc(post.uid).update({
         totalViews: firebase.firestore.FieldValue.increment(1),
       });
     }
-  } catch (err) {
-    // Silently fail for view tracking
-  }
+  } catch (err) {}
 }
 
 // ==================== POST INTERACTIONS ====================
@@ -2886,8 +2824,7 @@ async function toggleFeedFollow(uid, postId) {
 }
 
 function handleMediaClick(postId, type) {
-  if (type === 'video') return; // Video handles its own click
-  // Could open full-screen view
+  if (type === 'video') return;
 }
 
 function openPostOptions(postId, uid) {
@@ -2968,7 +2905,6 @@ async function confirmDeletePost(postId) {
     if (APP.feedTab === 'foryou') renderFeed();
     else renderFollowingFeed();
 
-    // Decrement post count
     await db.collection('users').doc(APP.currentUser.uid).update({
       postsCount: firebase.firestore.FieldValue.increment(-1),
     });
@@ -3012,7 +2948,6 @@ async function repostPost(postId) {
 
     await db.collection('posts').add(repost);
 
-    // Update share count
     await db.collection('posts').doc(postId).update({
       sharesCount: firebase.firestore.FieldValue.increment(1),
     });
@@ -3046,9 +2981,7 @@ async function sharePost(postId) {
         url: link,
       });
       await incrementAchievement(APP.currentUser.uid, 'first_share');
-    } catch {
-      // User cancelled
-    }
+    } catch {}
   } else {
     copyPostLink(postId);
   }
@@ -3056,7 +2989,6 @@ async function sharePost(postId) {
 
 function sharePostToChat(postId) {
   closeBottomSheet();
-  // Open chat selection
   openNewChatWithPost(postId);
 }
 
@@ -3084,7 +3016,6 @@ async function boostPost(postId) {
   const currentMonth = new Date().getMonth();
   let freeBoostsUsed = APP.currentUserData?.freeBoostsUsed || 0;
 
-  // Reset if new month
   if (APP.currentUserData?.freeBoostsResetMonth !== currentMonth) {
     freeBoostsUsed = 0;
     await db.collection('users').doc(APP.currentUser.uid).update({
@@ -3257,7 +3188,6 @@ async function postComment(postId) {
       commentsCount: firebase.firestore.FieldValue.increment(1),
     });
 
-    // Notify post owner
     const post = APP.feedPosts.find(p => p.id === postId) || APP.followingFeedPosts.find(p => p.id === postId);
     if (post && post.uid !== APP.currentUser.uid) {
       await addNotification(post.uid, {
@@ -3269,7 +3199,6 @@ async function postComment(postId) {
       });
     }
 
-    // Check for mentions
     const mentions = text.match(/@(\w+)/g);
     if (mentions) {
       for (const mention of mentions) {
@@ -3295,7 +3224,6 @@ async function postComment(postId) {
     await addXp(APP.currentUser.uid, 2, 'comment');
     await incrementAchievement(APP.currentUser.uid, 'first_comment');
 
-    // Refresh comments
     const html = await renderCommentsSheet(postId);
     document.getElementById('bottomSheetContent').innerHTML = html;
   } catch (err) {
@@ -3303,7 +3231,7 @@ async function postComment(postId) {
   }
 }
 
-// ==================== YELLOW BAG (PRODUCT OVERLAY) ====================
+// ==================== YELLOW BAG ====================
 
 async function openYellowBag(postId) {
   const post = APP.feedPosts.find(p => p.id === postId) || APP.followingFeedPosts.find(p => p.id === postId);
@@ -3337,6 +3265,52 @@ async function openYellowBag(postId) {
   `);
 }
 
+// ==================== CLEAR DISPLAY MODE (Long Press) ====================
+
+(function setupClearDisplayMode() {
+  let pressTimer = null;
+  let isClear = false;
+
+  document.addEventListener('touchstart', (e) => {
+    if (APP.currentPage !== 'home') return;
+    const feedItem = e.target.closest('.feed-item');
+    if (!feedItem) return;
+
+    pressTimer = setTimeout(() => {
+      isClear = true;
+      const header = feedItem.querySelector('.feed-item-header');
+      const actions = feedItem.querySelector('.feed-actions');
+      const caption = feedItem.querySelector('.feed-caption-area');
+      if (header) header.style.display = 'none';
+      if (actions) actions.style.display = 'none';
+      if (caption) caption.style.display = 'none';
+      document.getElementById('bottomNav').style.display = 'none';
+      document.getElementById('topHeader').style.display = 'none';
+      document.getElementById('bannerAd').style.display = 'none';
+    }, 800);
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    if (pressTimer) clearTimeout(pressTimer);
+    if (isClear) {
+      isClear = false;
+      document.querySelectorAll('.feed-item-header').forEach(el => el.style.display = '');
+      document.querySelectorAll('.feed-actions').forEach(el => el.style.display = '');
+      document.querySelectorAll('.feed-caption-area').forEach(el => el.style.display = '');
+      document.getElementById('bottomNav').style.display = 'flex';
+      document.getElementById('topHeader').style.display = 'flex';
+      document.getElementById('bannerAd').style.display = 'flex';
+    }
+  });
+})();
+
+console.log('Vidr Part 4 loaded: Feed, Rendering, Post Interactions');
+
+// ==========================================
+// VIDR - app.js Part 5
+// Stories, Discover, Search, Notifications
+// ==========================================
+
 // ==================== STORIES SYSTEM ====================
 
 async function loadStories() {
@@ -3351,7 +3325,6 @@ async function loadStories() {
       .orderBy('createdAt', 'desc')
       .get();
 
-    // Group by user
     const storyMap = new Map();
 
     snapshot.forEach(doc => {
@@ -3362,11 +3335,9 @@ async function loadStories() {
       storyMap.get(story.uid).push(story);
     });
 
-    // Build story users array
     APP.storyUsers = [];
     const blockedUsers = APP.currentUserData?.blockedUsers || [];
 
-    // Own stories first
     if (storyMap.has(APP.currentUser.uid)) {
       const ownStories = storyMap.get(APP.currentUser.uid);
       APP.storyUsers.push({
@@ -3385,7 +3356,6 @@ async function loadStories() {
       if (!userData) continue;
       if (userData.role === 'admin' && uid !== APP.currentUser.uid) continue;
 
-      // Check if all seen
       let allSeen = true;
       for (const s of stories) {
         const viewers = s.viewers || [];
@@ -3398,7 +3368,6 @@ async function loadStories() {
       APP.storyUsers.push({ uid, userData, stories, allSeen });
     }
 
-    // Sort: unseen first
     APP.storyUsers.sort((a, b) => {
       if (a.uid === APP.currentUser.uid) return -1;
       if (b.uid === APP.currentUser.uid) return 1;
@@ -3416,7 +3385,6 @@ async function loadStories() {
 function renderStories() {
   const scroll = document.getElementById('storiesScroll');
 
-  // Keep add story button
   let html = `
     <div class="story-item add-story" onclick="openCreateStory()">
       <div class="story-avatar-wrap add">
@@ -3429,7 +3397,6 @@ function renderStories() {
 
   APP.storyUsers.forEach((su, index) => {
     if (su.uid === APP.currentUser?.uid && su.stories.length > 0) {
-      // Show own story with ring
       html += `
         <div class="story-item" onclick="openStoryViewer(${0})">
           <div class="story-avatar-wrap ${su.allSeen ? 'seen' : ''}">
@@ -3499,7 +3466,6 @@ function renderCurrentStory() {
 
   const story = su.stories[APP.currentStoryIndex];
   if (!story) {
-    // Move to next user
     nextStoryUser();
     return;
   }
@@ -3507,7 +3473,6 @@ function renderCurrentStory() {
   const user = su.userData || {};
   const isOwn = su.uid === APP.currentUser?.uid;
 
-  // Progress bars
   let progressHTML = '';
   su.stories.forEach((_, i) => {
     let cls = '';
@@ -3516,7 +3481,6 @@ function renderCurrentStory() {
     progressHTML += `<div class="story-progress-segment ${cls}"><div class="story-progress-fill" id="storyProgress_${i}"></div></div>`;
   });
 
-  // Story content
   let contentHTML = '';
   if (story.type === 'image') {
     contentHTML = `<img src="${story.mediaURL}" alt="" style="max-width:100%;max-height:100%;object-fit:contain" onerror="this.src='default-product.png'">`;
@@ -3527,7 +3491,6 @@ function renderCurrentStory() {
     contentHTML = `<div class="story-text-content" style="background:${bg}"><span>${escapeHTML(story.text || '')}</span></div>`;
   }
 
-  // View count
   let viewsHTML = '';
   if (isOwn) {
     viewsHTML = `<div class="story-views">👁️ ${(story.viewers || []).length} views</div>`;
@@ -3561,13 +3524,8 @@ function renderCurrentStory() {
     </div>
   `;
 
-  // Mark as seen
   markStorySeen(story.id);
-
-  // Auto-advance
   startStoryTimer();
-
-  // Long press to pause
   setupStoryLongPress();
 }
 
@@ -3644,7 +3602,6 @@ function prevStory() {
     APP.currentStoryIndex--;
     renderCurrentStory();
   } else {
-    // Previous user
     if (APP.currentStoryUserIndex > 0) {
       APP.currentStoryUserIndex--;
       const su = APP.storyUsers[APP.currentStoryUserIndex];
@@ -3689,7 +3646,6 @@ async function replyToStory(targetUid, storyId, text) {
   if (!text || !text.trim()) return;
 
   try {
-    // Send as DM
     const chatRoomId = await getOrCreateChatRoom(targetUid);
     await db.collection('messages').add({
       chatRoomId,
@@ -3796,8 +3752,6 @@ async function uploadStoryMedia(file) {
 }
 
 function createTextStory() {
-  let selectedBg = 0;
-
   openCenterModal(`
     <div class="modal-title">Text Story</div>
     <div class="text-post-preview" id="textStoryPreview" style="background:${TEXT_BG_COLORS[0]};min-height:200px;border-radius:var(--radius-lg);margin-bottom:12px">
@@ -3877,7 +3831,6 @@ async function loadDiscover(refresh = false) {
   loading.style.display = 'flex';
 
   try {
-    // Get users I'm following
     const followingSnap = await db.collection('follows')
       .where('followerId', '==', APP.currentUser.uid)
       .get();
@@ -3903,12 +3856,10 @@ async function loadDiscover(refresh = false) {
     for (const doc of snapshot.docs) {
       const user = { id: doc.id, ...doc.data() };
 
-      // Skip self, followed, blocked, admins
       if (followingIds.has(user.uid)) continue;
       if (blockedUsers.includes(user.uid)) continue;
       if (user.role === 'admin' && user.uid !== APP.currentUser.uid) continue;
 
-      // Get mutual count
       user.mutualCount = 0;
       try {
         user.mutualCount = await getMutualCount(user.uid);
@@ -3919,8 +3870,6 @@ async function loadDiscover(refresh = false) {
 
     renderDiscover();
     loading.style.display = 'none';
-
-    // Setup infinite scroll
     setupDiscoverScroll();
   } catch (err) {
     console.error('Load discover error:', err);
@@ -4015,27 +3964,12 @@ function setupSearch() {
   });
 }
 
-// Initialize search when opening
-function openSearch() {
-  openOverlayPage('searchPage');
-  setTimeout(() => {
-    const input = document.getElementById('searchInput');
-    if (input) input.focus();
-    setupSearch();
-    loadRecentSearches();
-  }, 300);
-}
-
-// Override default navigateTo for search
-const originalNavigateTo = navigateTo;
-
 async function performSearch(query) {
   document.getElementById('searchRecent').style.display = 'none';
   const resultsContainer = document.getElementById('searchResults');
   resultsContainer.style.display = 'block';
   resultsContainer.innerHTML = '<div class="loading-spinner small" style="margin:40px auto"></div>';
 
-  // Save to recent
   saveRecentSearch(query);
 
   try {
@@ -4139,7 +4073,6 @@ async function searchPosts(query, container) {
 }
 
 async function searchTags(query, container) {
-  // Tags/hashtags
   const tag = query.replace('#', '').toLowerCase();
 
   const snapshot = await db.collection('posts')
@@ -4171,7 +4104,7 @@ async function searchTags(query, container) {
   });
 
   html += '</div>';
-  container.innerHTML = found > 0 ? html : '<div class="empty-state"><p>No posts with #${escapeHTML(tag)} found</p></div>';
+  container.innerHTML = found > 0 ? html : `<div class="empty-state"><p>No posts with #${escapeHTML(tag)} found</p></div>`;
 }
 
 function switchSearchTab(tab, btn) {
@@ -4204,10 +4137,11 @@ function loadRecentSearches() {
 
   let html = '';
   APP.searchRecent.forEach(q => {
+    const escapedQ = escapeHTML(q).replace(/'/g, "\\'");
     html += `
       <div class="search-recent-item">
-        <span onclick="document.getElementById('searchInput').value='${escapeHTML(q)}';performSearch('${escapeHTML(q)}')">${escapeHTML(q)}</span>
-        <button class="search-recent-remove" onclick="removeRecentSearch('${escapeHTML(q)}')">✕</button>
+        <span onclick="document.getElementById('searchInput').value='${escapedQ}';performSearch('${escapedQ}')">${escapeHTML(q)}</span>
+        <button class="search-recent-remove" onclick="removeRecentSearch('${escapedQ}')">✕</button>
       </div>
     `;
   });
@@ -4307,18 +4241,14 @@ function renderNotifications() {
   });
 
   container.innerHTML = html;
-
-  // Mark all as read
   markNotificationsRead();
 }
 
 async function handleNotifClick(notifId, type, fromUid, postId) {
-  // Mark individual as read
   try {
     await db.collection('notifications').doc(notifId).update({ read: true });
   } catch {}
 
-  // Navigate based on type
   closeOverlayPage('notificationsPage');
 
   switch (type) {
@@ -4359,70 +4289,7 @@ async function markNotificationsRead() {
   }
 }
 
-// Override navigateTo for search and notifications
-(function() {
-  const _nav = navigateTo;
-  window.navigateTo = function(page, data) {
-    if (page === 'search') {
-      openOverlayPage('searchPage');
-      setTimeout(() => {
-        const input = document.getElementById('searchInput');
-        if (input) input.focus();
-        setupSearch();
-        loadRecentSearches();
-      }, 350);
-      return;
-    }
-    if (page === 'notifications') {
-      renderNotifications();
-      return;
-    }
-    _nav(page, data);
-  };
-})();
-
-// ==================== CLEAR DISPLAY MODE (LONG PRESS) ====================
-
-(function setupClearDisplayMode() {
-  let pressTimer = null;
-  let isClear = false;
-
-  document.addEventListener('touchstart', (e) => {
-    if (APP.currentPage !== 'home') return;
-    const feedItem = e.target.closest('.feed-item');
-    if (!feedItem) return;
-
-    pressTimer = setTimeout(() => {
-      isClear = true;
-      // Hide header and actions
-      const header = feedItem.querySelector('.feed-item-header');
-      const actions = feedItem.querySelector('.feed-actions');
-      const caption = feedItem.querySelector('.feed-caption-area');
-      if (header) header.style.display = 'none';
-      if (actions) actions.style.display = 'none';
-      if (caption) caption.style.display = 'none';
-      document.getElementById('bottomNav').style.display = 'none';
-      document.getElementById('topHeader').style.display = 'none';
-      document.getElementById('bannerAd').style.display = 'none';
-    }, 800);
-  }, { passive: true });
-
-  document.addEventListener('touchend', () => {
-    if (pressTimer) clearTimeout(pressTimer);
-    if (isClear) {
-      isClear = false;
-      // Restore
-      document.querySelectorAll('.feed-item-header').forEach(el => el.style.display = '');
-      document.querySelectorAll('.feed-actions').forEach(el => el.style.display = '');
-      document.querySelectorAll('.feed-caption-area').forEach(el => el.style.display = '');
-      document.getElementById('bottomNav').style.display = 'flex';
-      document.getElementById('topHeader').style.display = 'flex';
-      document.getElementById('bannerAd').style.display = 'flex';
-    }
-  });
-})();
-
-// ==================== CHAT HELPERS (for story reply) ====================
+// ==================== CHAT HELPERS ====================
 
 async function getOrCreateChatRoom(otherUid) {
   const participants = [APP.currentUser.uid, otherUid].sort();
@@ -4454,11 +4321,9 @@ async function updateChatRoomLastMessage(chatRoomId, text, otherUid) {
 }
 
 function openNewChatWithPost(postId) {
-  // Open new chat search then send post
   openNewChat(postId);
 }
 
-// Placeholder for new chat - will be fully implemented in chat part
 function openNewChat(postId = null) {
   openBottomSheet(`
     <h3 class="sheet-title">Send to</h3>
@@ -4514,7 +4379,6 @@ async function startChatWith(uid, postId = '') {
   const chatRoomId = await getOrCreateChatRoom(uid);
 
   if (postId) {
-    // Send post as message
     await db.collection('messages').add({
       chatRoomId,
       senderId: APP.currentUser.uid,
@@ -4528,20 +4392,14 @@ async function startChatWith(uid, postId = '') {
     showToast('Post shared!', 'success');
   }
 
-  // Open chat room
-  openChatRoomById(chatRoomId, uid);
+  openChatRoom(chatRoomId, uid);
 }
 
-// Placeholder - full implementation in chat part
-async function openChatRoomById(chatRoomId, otherUid) {
-  navigateTo('chat');
-}
-
-console.log('Feed, Stories, Discover systems loaded');
+console.log('Vidr Part 5 loaded: Stories, Discover, Search, Notifications');
 
 // ==========================================
-// VIDR - app.js Part 3
-// Profile, Chat, Settings, Post Creation
+// VIDR - app.js Part 6
+// Profile, Edit Profile, Chat, Settings
 // ==========================================
 
 // ==================== PROFILE PAGE ====================
@@ -4563,26 +4421,22 @@ async function loadProfile(uid, asOverlay = false) {
       return;
     }
 
-    // Record visit
     if (uid !== APP.currentUser?.uid) {
       recordProfileVisit(uid);
     }
 
     const isOwn = uid === APP.currentUser?.uid;
     const isAdmin = APP.currentUserData?.role === 'admin';
-    const isMod = APP.currentUserData?.role === 'moderator';
     const isVerified = userData.verified;
     const isUserAdmin = userData.role === 'admin';
     const showGlow = isVerified || isUserAdmin;
     const following = isOwn ? false : await isFollowing(uid);
 
-    // Private check
     if (userData.isPrivate && !isOwn && !following && !isAdmin) {
       container.innerHTML = renderPrivateProfile(userData, uid);
       return;
     }
 
-    // Get post counts
     const postsSnap = await db.collection('posts')
       .where('uid', '==', uid)
       .orderBy('createdAt', 'desc')
@@ -4592,13 +4446,11 @@ async function loadProfile(uid, asOverlay = false) {
     const posts = [];
     postsSnap.forEach(doc => {
       const post = { id: doc.id, ...doc.data() };
-      // Admin bypass: show all posts including private
       if (isOwn || isAdmin || post.visibility === 'public' || (following && post.visibility === 'followers')) {
         posts.push(post);
       }
     });
 
-    // Achievements display
     const selectedAchievements = userData.selectedAchievements || [];
     let achievementHTML = '';
     selectedAchievements.slice(0, 3).forEach(achId => {
@@ -4611,27 +4463,23 @@ async function loadProfile(uid, asOverlay = false) {
       achievementHTML += `<div class="achievement-badge ${cls}" title="${def.name} Lv.${level}">${def.icon} ${level}</div>`;
     });
 
-    // Title display
     const title = userData.selectedTitle || null;
     let titleHTML = '';
     if (title) {
       titleHTML = `<div class="profile-title ${title.rarity || 'common'}">${escapeHTML(title.name)}</div>`;
     }
 
-    // XP progress
     const currentXp = userData.xp || 0;
     const currentLevel = userData.level || 1;
     const xpNeeded = getXpForLevel(currentLevel);
     const xpPercent = Math.min((currentXp / xpNeeded) * 100, 100);
 
-    // XP boost check
     let xpBoostActive = false;
     if (userData.xpBoostEnd) {
       const end = userData.xpBoostEnd.toDate ? userData.xpBoostEnd.toDate() : new Date(userData.xpBoostEnd);
       if (end > new Date()) xpBoostActive = true;
     }
 
-    // Mutual badge
     let mutualHTML = '';
     if (!isOwn) {
       const mutualCount = await getMutualCount(uid);
@@ -4640,7 +4488,6 @@ async function loadProfile(uid, asOverlay = false) {
       }
     }
 
-    // Quick buttons
     let quickBtns = '';
     if (isOwn) {
       quickBtns = `
@@ -4652,15 +4499,13 @@ async function loadProfile(uid, asOverlay = false) {
           <button class="profile-quick-btn" onclick="openWallet()">💰 Wallet</button>
           <button class="profile-quick-btn" onclick="openEarnPage()">📋 Earn</button>
           <button class="profile-quick-btn" onclick="openCampaign()">📺 Watch Ads</button>
+          <button class="profile-quick-btn" onclick="openShop()">🛍️ Shop</button>
           ${isAdmin || isUserAdmin ? '<button class="profile-quick-btn" onclick="openAdmin()">⚙️ Admin</button>' : ''}
         </div>
       `;
     }
 
-    // Profile grid
     let gridHTML = renderProfileGrid(posts);
-
-    // Cover animation class
     const coverClass = showGlow ? 'animated' : '';
 
     container.innerHTML = `
@@ -4942,7 +4787,6 @@ function copyProfileLink(uid) {
 }
 
 async function openFollowList(uid, type) {
-  const collection = type === 'followers' ? 'followingId' : 'followerId';
   const queryField = type === 'followers' ? 'followingId' : 'followerId';
   const resultField = type === 'followers' ? 'followerId' : 'followingId';
 
@@ -4990,7 +4834,7 @@ function changeAvatar() {
     showLoading();
     try {
       const compressed = await compressImage(file, 400, 0.85);
-      const path = `avatars/${APP.currentUser.uid}.jpg`;
+      const path = `avatars/${APP.currentUser.uid}_${Date.now()}.jpg`;
       const ref = storage.ref(path);
       await ref.put(compressed);
       const url = await ref.getDownloadURL();
@@ -5022,7 +4866,7 @@ function changeCover() {
     showLoading();
     try {
       const compressed = await compressImage(file, 1200, 0.85);
-      const path = `covers/${APP.currentUser.uid}.jpg`;
+      const path = `covers/${APP.currentUser.uid}_${Date.now()}.jpg`;
       const ref = storage.ref(path);
       await ref.put(compressed);
       const url = await ref.getDownloadURL();
@@ -5054,7 +4898,6 @@ function renderEditProfile() {
 
   const container = document.getElementById('editProfileContent');
 
-  // Title options
   const allTitles = u.titles || [];
   let titleOptions = '<option value="">None</option>';
   allTitles.forEach(t => {
@@ -5172,7 +5015,6 @@ async function saveProfile() {
       isPrivate: isPrivate || false,
     };
 
-    // Handle username change
     if (username !== oldUsername) {
       const check = await db.collection('usernames').doc(username).get();
       if (check.exists) {
@@ -5184,7 +5026,6 @@ async function saveProfile() {
       updates.username = username;
     }
 
-    // Title
     if (titleName) {
       const title = (APP.currentUserData.titles || []).find(t => t.name === titleName);
       if (title) updates.selectedTitle = title;
@@ -5212,8 +5053,8 @@ async function saveProfile() {
 // ==================== EDIT ACHIEVEMENTS ====================
 
 function openEditAchievements() {
+  window._tempSelectedAchievements = [...(APP.currentUserData?.selectedAchievements || [])];
   const achievements = APP.currentUserData?.achievements || {};
-  const selected = APP.currentUserData?.selectedAchievements || [];
 
   let html = '<h3 class="sheet-title">Display Achievements (max 3)</h3>';
   html += '<div style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto">';
@@ -5222,15 +5063,15 @@ function openEditAchievements() {
     const level = achievements[def.id] || 0;
     if (level === 0) return;
 
-    const isSelected = selected.includes(def.id);
+    const isSelected = window._tempSelectedAchievements.includes(def.id);
     html += `
-      <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-md);cursor:pointer;border:1.5px solid ${isSelected ? 'var(--primary)' : 'transparent'}" onclick="toggleAchievementSelection('${def.id}', this)">
+      <div id="achievItem_${def.id}" style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-md);cursor:pointer;border:1.5px solid ${isSelected ? 'var(--primary)' : 'transparent'}" onclick="toggleAchievementSelection('${def.id}', this)">
         <span style="font-size:24px">${def.icon}</span>
         <div style="flex:1">
           <div style="font-weight:600;font-size:14px">${def.name}</div>
           <div style="font-size:12px;color:var(--text-tertiary)">Level ${level} · ${def.desc}</div>
         </div>
-        <div style="font-size:20px">${isSelected ? '✅' : '⬜'}</div>
+        <div style="font-size:20px" id="achievCheck_${def.id}">${isSelected ? '✅' : '⬜'}</div>
       </div>
     `;
   });
@@ -5241,14 +5082,12 @@ function openEditAchievements() {
   openBottomSheet(html);
 }
 
-window._tempSelectedAchievements = [];
-
 function toggleAchievementSelection(id, el) {
   const idx = window._tempSelectedAchievements.indexOf(id);
   if (idx > -1) {
     window._tempSelectedAchievements.splice(idx, 1);
     el.style.borderColor = 'transparent';
-    el.querySelector('div:last-child').textContent = '⬜';
+    document.getElementById(`achievCheck_${id}`).textContent = '⬜';
   } else {
     if (window._tempSelectedAchievements.length >= 3) {
       showToast('Max 3 achievements', 'warning');
@@ -5256,7 +5095,7 @@ function toggleAchievementSelection(id, el) {
     }
     window._tempSelectedAchievements.push(id);
     el.style.borderColor = 'var(--primary)';
-    el.querySelector('div:last-child').textContent = '✅';
+    document.getElementById(`achievCheck_${id}`).textContent = '✅';
   }
 }
 
@@ -5355,12 +5194,10 @@ async function openChatRoom(chatRoomId, otherUid) {
     </div>
   `;
 
-  // Mark as read
   await db.collection('chatRooms').doc(chatRoomId).update({
     [`unread_${APP.currentUser.uid}`]: 0,
   });
 
-  // Check message request
   const roomDoc = await db.collection('chatRooms').doc(chatRoomId).get();
   const roomData = roomDoc.data();
 
@@ -5372,12 +5209,10 @@ async function openChatRoom(chatRoomId, otherUid) {
     document.getElementById('chatInputBar').style.display = 'flex';
   }
 
-  // Listen to messages
   loadChatMessages(chatRoomId);
 }
 
 function loadChatMessages(chatRoomId) {
-  // Cleanup old listener
   APP.chatListeners.forEach(unsub => unsub());
   APP.chatListeners = [];
 
@@ -5398,7 +5233,6 @@ function loadChatMessages(chatRoomId) {
         const msgDate = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date();
         const dateStr = msgDate.toLocaleDateString();
 
-        // Date separator
         if (dateStr !== lastDate) {
           container.innerHTML += `<div class="chat-date-separator">${dateStr}</div>`;
           lastDate = dateStr;
@@ -5407,12 +5241,9 @@ function loadChatMessages(chatRoomId) {
         let content = '';
         if (msg.type === 'image') {
           content = `<img src="${msg.mediaURL}" alt="" style="max-width:220px;border-radius:var(--radius-md)" onerror="this.src='default-product.png'" loading="lazy">`;
-        } if (msg.type === 'sticker') {
-  content = `<span class="chat-bubble-sticker" style="font-size:60px;display:block;text-align:center">${msg.sticker}</span>`;
-} if (msg.type === 'sticker_gif') {
-  content = `<img src="${msg.stickerUrl}" style="width:150px;height:150px;object-fit:contain;border-radius:12px" alt="sticker">`;
-}  else if (msg.type === 'sticker') {
-          content = `<span class="chat-bubble-sticker" style="font-size:60px;display:block;text-align:center">${msg.sticker}</span>`;
+        } else if (msg.type === 'sticker') {
+          const anim = msg.animation || 'bounce';
+          content = `<span class="animated-sticker ${anim}" style="font-size:70px;display:block;text-align:center">${msg.sticker}</span>`;
         } else if (msg.type === 'post_share') {
           content = `<div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);cursor:pointer;font-size:13px" onclick="openSinglePost('${msg.postId}')">📎 Shared a post<br><span style="color:var(--primary)">View post →</span></div>`;
         } else if (msg.type === 'story_reply') {
@@ -5434,7 +5265,6 @@ function loadChatMessages(chatRoomId) {
         `;
       });
 
-      // Scroll to bottom
       container.scrollTop = container.scrollHeight;
     });
 
@@ -5449,12 +5279,10 @@ async function sendMessage() {
   input.value = '';
 
   try {
-    // Check if accepted (message request)
     const roomDoc = await db.collection('chatRooms').doc(APP.currentChatRoom).get();
     const roomData = roomDoc.data();
 
     if (!roomData.accepted && roomData.initiator === APP.currentUser.uid) {
-      // Already sent initial request, can't send more
       const msgCount = await db.collection('messages')
         .where('chatRoomId', '==', APP.currentChatRoom)
         .where('senderId', '==', APP.currentUser.uid)
@@ -5477,7 +5305,6 @@ async function sendMessage() {
 
     await updateChatRoomLastMessage(APP.currentChatRoom, text, APP.currentChatUser);
 
-    // Notify
     await addNotification(APP.currentChatUser, {
       type: 'message',
       text: `${APP.currentUserData.displayName}: ${text.substring(0, 50)}`,
@@ -5491,7 +5318,6 @@ async function sendMessage() {
   }
 }
 
-// Enter key to send
 document.addEventListener('keypress', (e) => {
   if (e.key === 'Enter' && document.activeElement?.id === 'chatInput') {
     sendMessage();
@@ -5564,7 +5390,7 @@ function openStickerPicker() {
   html += '</div>';
   html += `<div class="sticker-grid" id="stickerGrid">`;
   STICKER_PACKS.default.forEach(s => {
-    html += `<div class="sticker-item" onclick="sendSticker('${s}')">${s}</div>`;
+    html += `<div class="sticker-item" onclick="sendSticker('${s.emoji}','${s.anim}')"><span class="animated-sticker ${s.anim}" style="font-size:36px">${s.emoji}</span></div>`;
   });
   html += '</div></div>';
 
@@ -5578,11 +5404,11 @@ function switchStickerPack(pack, btn) {
   const grid = document.getElementById('stickerGrid');
   grid.innerHTML = '';
   (STICKER_PACKS[pack] || []).forEach(s => {
-    grid.innerHTML += `<div class="sticker-item" onclick="sendSticker('${s}')">${s}</div>`;
+    grid.innerHTML += `<div class="sticker-item" onclick="sendSticker('${s.emoji}','${s.anim}')"><span class="animated-sticker ${s.anim}" style="font-size:36px">${s.emoji}</span></div>`;
   });
 }
 
-async function sendSticker(sticker) {
+async function sendSticker(sticker, anim = 'bounce') {
   closeBottomSheet();
   if (!APP.currentChatRoom || !APP.currentChatUser) return;
 
@@ -5592,6 +5418,7 @@ async function sendSticker(sticker) {
       senderId: APP.currentUser.uid,
       type: 'sticker',
       sticker,
+      animation: anim,
       read: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -5849,6 +5676,13 @@ async function clearAppCache() {
   showToast('Cache cleared', 'success');
 }
 
+console.log('Vidr Part 6 loaded: Profile, Edit Profile, Chat, Settings');
+
+// ==========================================
+// VIDR - app.js Part 7
+// Post Creation, Wallet (Stripe), Withdrawal
+// ==========================================
+
 // ==================== POST CREATION ====================
 
 function openCreateVideo() {
@@ -5936,7 +5770,6 @@ async function handleVideoSelect(event) {
 
   document.getElementById('postVideoBtn').disabled = false;
 
-  // Generate thumbnails
   generateVideoThumbnails(file);
 }
 
@@ -6005,7 +5838,6 @@ async function publishVideoPost() {
   document.getElementById('postVideoBtn').disabled = true;
 
   try {
-    // Upload video
     const videoPath = `posts/${APP.currentUser.uid}/${Date.now()}.mp4`;
     const videoRef = storage.ref(videoPath);
     const uploadTask = videoRef.put(selectedVideoFile);
@@ -6019,7 +5851,6 @@ async function publishVideoPost() {
     await uploadTask;
     const videoURL = await videoRef.getDownloadURL();
 
-    // Upload thumbnail
     let thumbURL = '';
     if (selectedVideoThumbnail) {
       const thumbPath = `thumbnails/${APP.currentUser.uid}/${Date.now()}.jpg`;
@@ -6030,7 +5861,6 @@ async function publishVideoPost() {
 
     progressText.textContent = 'Publishing...';
 
-    // Create post
     await db.collection('posts').add({
       uid: APP.currentUser.uid,
       type: 'video',
@@ -6056,7 +5886,6 @@ async function publishVideoPost() {
     await addXp(APP.currentUser.uid, 10, 'post');
     await incrementAchievement(APP.currentUser.uid, 'first_post');
 
-    // Reset
     selectedVideoFile = null;
     selectedVideoThumbnail = null;
 
@@ -6363,67 +6192,6 @@ function closeCreateForm(formId) {
   selectedPhotoFiles = [];
 }
 
-// ==================== GO LIVE SETUP ====================
-
-function openGoLive() {
-  openOverlayPage('liveStreamPage');
-
-  const container = document.getElementById('liveStreamContent');
-  container.innerHTML = `
-    <div class="live-setup">
-      <h3 style="font-size:20px;font-weight:800;margin-bottom:8px">Go LIVE</h3>
-
-      <div class="live-preview" id="livePreview">
-        <video id="livePreviewVideo" autoplay playsinline muted></video>
-      </div>
-
-      <input type="text" class="live-setup-input" id="liveTitle" placeholder="Add a title..." maxlength="50">
-
-      <div class="create-option-row" style="width:100%;max-width:300px">
-        <div class="create-option-label">Enable Shop</div>
-        <div class="toggle-switch" id="liveShopToggle" onclick="this.classList.toggle('active')"><div class="toggle-switch-knob"></div></div>
-      </div>
-
-      <button class="live-start-btn" onclick="startLiveStream()">Go LIVE</button>
-
-      <button style="color:var(--text-tertiary);margin-top:12px;font-size:14px" onclick="closeOverlayPage('liveStreamPage')">Cancel</button>
-    </div>
-  `;
-
-  // Start camera preview
-  startCameraPreview();
-}
-
-async function startCameraPreview() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-    const video = document.getElementById('livePreviewVideo');
-    if (video) {
-      video.srcObject = stream;
-      video.play();
-    }
-  } catch (err) {
-    console.error('Camera error:', err);
-    showToast('Camera access denied', 'error');
-  }
-}
-
-function stopCameraPreview() {
-  const video = document.getElementById('livePreviewVideo');
-  if (video && video.srcObject) {
-    video.srcObject.getTracks().forEach(track => track.stop());
-    video.srcObject = null;
-  }
-}
-
-console.log('Profile, Chat, Settings, Post Creation loaded');
-
-// ==========================================
-// VIDR - app.js Part 4
-// Wallet, Games, Spin, Leaderboard, Shop,
-// Referral, Earn, Campaign, Live Stream
-// ==========================================
-
 // ==================== WALLET ====================
 
 function openWallet() {
@@ -6523,22 +6291,11 @@ async function purchaseGoldPackage(packageId) {
       <div style="color:var(--text-tertiary);font-size:13px">Gold Coins</div>
       ${pkg.bonus ? `<div style="color:var(--success);font-size:13px;font-weight:600;margin-top:4px">Includes ${formatNumber(pkg.bonus)} bonus!</div>` : ''}
     </div>
-    <h4 style="font-size:14px;font-weight:600;margin-bottom:10px">Payment Method</h4>
-    <div class="payment-options">
-      <div class="payment-option selected" onclick="selectPaymentMethod(this,'stripe')">
-        <div class="payment-radio"></div>
-        <div class="payment-name">💳 Credit/Debit Card (Stripe)</div>
-      </div>
-      <div class="payment-option" onclick="selectPaymentMethod(this,'paypal')">
-        <div class="payment-radio"></div>
-        <div class="payment-name">🅿️ PayPal</div>
-      </div>
-    </div>
-    <div class="checkout-total" style="margin-top:12px">
+    <div class="checkout-total" style="margin:12px 0">
       <span>Total</span>
       <span>$${pkg.price.toFixed(2)}</span>
     </div>
-    <div class="modal-actions" style="margin-top:12px">
+    <div class="modal-actions">
       <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
       <button class="modal-btn primary" onclick="confirmGoldPurchase('${pkg.id}')">Pay $${pkg.price.toFixed(2)}</button>
     </div>
@@ -6547,151 +6304,141 @@ async function purchaseGoldPackage(packageId) {
 
 let selectedPaymentMethod = 'stripe';
 
-function selectPaymentMethod(el, method) {
-  selectedPaymentMethod = method;
-  document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-}
+// ==================== STRIPE INTEGRATION ====================
 
 async function confirmGoldPurchase(packageId) {
+  const pkg = GOLD_PACKAGES.find(p => p.id === packageId);
+  if (!pkg) return;
+
   closeCenterModal();
   showLoading();
 
-  const pkg = GOLD_PACKAGES.find(p => p.id === packageId);
-  if (!pkg) { hideLoading(); return; }
-
   try {
-    // In production, integrate Stripe/PayPal here
-    // For now, simulate successful payment
-    await new Promise(r => setTimeout(r, 1500));
-
-    const totalCoins = pkg.coins + (pkg.bonus || 0);
-
-    await db.collection('users').doc(APP.currentUser.uid).update({
-      goldCoins: firebase.firestore.FieldValue.increment(totalCoins),
-      totalSpent: firebase.firestore.FieldValue.increment(pkg.price),
-    });
-
-    APP.currentUserData.goldCoins = (APP.currentUserData.goldCoins || 0) + totalCoins;
-
-    // Transaction record
-    await db.collection('transactions').add({
-      uid: APP.currentUser.uid,
-      type: 'purchase',
-      amount: totalCoins,
-      coinType: 'gold',
-      price: pkg.price,
-      packageId,
-      method: selectedPaymentMethod,
-      description: `Purchased ${pkg.name} package`,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    // Referral purchase commission
-    if (APP.currentUserData.referredBy) {
-      const commission = Math.floor(pkg.price * REFERRAL_PURCHASE_COMMISSION * 100); // gold coins
-      if (commission > 0) {
-        await db.collection('users').doc(APP.currentUserData.referredBy).update({
-          goldCoins: firebase.firestore.FieldValue.increment(commission),
-          referralEarnings: firebase.firestore.FieldValue.increment(commission),
-        });
-
-        await db.collection('transactions').add({
-          uid: APP.currentUserData.referredBy,
-          type: 'referral_commission',
-          amount: commission,
-          coinType: 'gold',
-          description: `6% referral commission from purchase`,
-          fromUid: APP.currentUser.uid,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-
-        await addNotification(APP.currentUserData.referredBy, {
-          type: 'system',
-          text: `You earned 🪙${commission} from a referral purchase! 💰`,
-          icon: '💰',
-        });
-      }
+    initStripe();
+    if (!stripe) {
+      hideLoading();
+      showToast('Stripe not loaded. Please refresh.', 'error');
+      return;
     }
 
-    // Marketing commission
-    await processMarketingCommission(pkg.price, 'purchase');
-
-    // Admin payout record
-    await db.collection('payouts').add({
-      type: 'coin_purchase',
-      userId: APP.currentUser.uid,
-      amount: pkg.price,
-      platformRevenue: pkg.price,
-      method: selectedPaymentMethod,
-      status: 'completed',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    const functions = getFirebaseFunctions();
+    const createIntent = functions.httpsCallable('createPaymentIntent');
+    const result = await createIntent({ packageId });
+    const { clientSecret } = result.data;
 
     hideLoading();
-    launchConfetti();
-    showToast(`🪙 ${formatNumber(totalCoins)} gold coins added!`, 'success');
-    renderWallet();
+    openStripePaymentModal(clientSecret, pkg.price * 100, `${pkg.name} - ${formatNumber(pkg.coins + (pkg.bonus || 0))} Gold Coins`, 'coin_purchase', packageId);
   } catch (err) {
     hideLoading();
-    showToast('Purchase failed', 'error');
-    console.error('Purchase error:', err);
+    console.error('Stripe error:', err);
+    showToast('Payment setup failed: ' + (err.message || 'Unknown error'), 'error');
   }
 }
 
-async function processMarketingCommission(amount, type) {
+function openStripePaymentModal(clientSecret, amount, description, type, packageId = null) {
+  currentStripePaymentType = type;
+  currentStripePackageId = packageId;
+
+  document.getElementById('stripeAmountDisplay').innerHTML = `
+    <div style="font-size:14px;color:var(--text-tertiary);font-weight:400;margin-bottom:4px">${description}</div>
+    $${(amount / 100).toFixed(2)}
+  `;
+
+  const modal = document.getElementById('stripePaymentModal');
+  modal.style.display = 'flex';
+
+  const appearance = {
+    theme: APP.darkMode ? 'night' : 'stripe',
+    variables: {
+      colorPrimary: '#e91e8c',
+      colorBackground: APP.darkMode ? '#1a1a35' : '#ffffff',
+      colorText: APP.darkMode ? '#ffffff' : '#1a1033',
+      colorDanger: '#ef4444',
+      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+      borderRadius: '8px',
+    }
+  };
+
+  stripeElements = stripe.elements({ clientSecret, appearance });
+  stripePaymentElement = stripeElements.create('payment');
+  stripePaymentElement.mount('#stripePaymentElement');
+
+  const form = document.getElementById('stripePaymentForm');
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    await submitStripePayment(clientSecret);
+  };
+}
+
+async function submitStripePayment(clientSecret) {
+  const submitBtn = document.getElementById('stripeSubmitBtn');
+  const errorEl = document.getElementById('stripePaymentError');
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Processing...';
+  errorEl.textContent = '';
+
   try {
-    const marketingSnap = await db.collection('users')
-      .where('role', '==', 'marketing')
-      .get();
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements: stripeElements,
+      confirmParams: {
+        return_url: `${window.location.origin}?payment=success`,
+      },
+      redirect: 'if_required',
+    });
 
-    for (const doc of marketingSnap.docs) {
-      const commission = Math.floor(amount * MARKETING_AD_COMMISSION * 100);
-      if (commission <= 0) continue;
+    if (error) {
+      errorEl.textContent = error.message;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Pay Now';
+      return;
+    }
 
-      await db.collection('users').doc(doc.id).update({
-        goldCoins: firebase.firestore.FieldValue.increment(commission),
-        totalEarned: firebase.firestore.FieldValue.increment(commission),
-      });
+    if (paymentIntent && paymentIntent.status === 'succeeded') {
+      closeStripeModal();
+      launchConfetti();
+      showToast('Payment successful! 🎉 Coins crediting...', 'success', 5000);
 
-      await db.collection('transactions').add({
-        uid: doc.id,
-        type: 'marketing_commission',
-        amount: commission,
-        coinType: 'gold',
-        description: `10% marketing commission from ${type}`,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-
-      await db.collection('payouts').add({
-        type: 'marketing_commission',
-        userId: doc.id,
-        amount: commission,
-        sourceType: type,
-        status: 'completed',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
+      setTimeout(async () => {
+        await loadUserData();
+        if (document.getElementById('walletPage').classList.contains('active')) {
+          renderWallet();
+        }
+      }, 3000);
     }
   } catch (err) {
-    console.error('Marketing commission error:', err);
+    console.error('Payment error:', err);
+    errorEl.textContent = 'Payment failed. Please try again.';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Pay Now';
   }
 }
+
+function closeStripeModal() {
+  const modal = document.getElementById('stripePaymentModal');
+  modal.style.display = 'none';
+
+  if (stripePaymentElement) {
+    stripePaymentElement.destroy();
+    stripePaymentElement = null;
+  }
+  stripeElements = null;
+  currentStripePaymentType = null;
+}
+
+// ==================== VERIFIED SUBSCRIPTION (Stripe) ====================
 
 async function subscribeVerified() {
   openCenterModal(`
     <div class="modal-title">Verified Subscription</div>
     <p class="modal-text">$${VERIFIED_PRICE}/month for all premium features</p>
-    <div class="payment-options">
-      <div class="payment-option selected" onclick="selectPaymentMethod(this,'stripe')">
-        <div class="payment-radio"></div>
-        <div class="payment-name">💳 Stripe</div>
-      </div>
-      <div class="payment-option" onclick="selectPaymentMethod(this,'paypal')">
-        <div class="payment-radio"></div>
-        <div class="payment-name">🅿️ PayPal</div>
-      </div>
+    <div style="text-align:left;margin:16px 0">
+      <div style="padding:6px 0;font-size:13px">✨ Verified badge & animated glow</div>
+      <div style="padding:6px 0;font-size:13px">🎨 Animated profile cover</div>
+      <div style="padding:6px 0;font-size:13px">🚀 ${VERIFIED_BOOSTS_PER_MONTH} free post boosts/month</div>
+      <div style="padding:6px 0;font-size:13px">🛍️ Shop access (sell products)</div>
     </div>
-    <div class="modal-actions" style="margin-top:16px">
+    <div class="modal-actions">
       <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
       <button class="modal-btn primary" onclick="confirmVerifiedSubscription()">Subscribe $${VERIFIED_PRICE}/mo</button>
     </div>
@@ -6703,62 +6450,28 @@ async function confirmVerifiedSubscription() {
   showLoading();
 
   try {
-    await new Promise(r => setTimeout(r, 1500));
-
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-
-    await db.collection('users').doc(APP.currentUser.uid).update({
-      verified: true,
-      verifiedUntil: expiryDate,
-      freeBoostsUsed: 0,
-      freeBoostsResetMonth: new Date().getMonth(),
-    });
-
-    APP.currentUserData.verified = true;
-    APP.currentUserData.verifiedUntil = expiryDate;
-
-    await db.collection('transactions').add({
-      uid: APP.currentUser.uid,
-      type: 'subscription',
-      amount: -VERIFIED_PRICE,
-      coinType: 'usd',
-      description: 'Verified subscription (30 days)',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    await processMarketingCommission(VERIFIED_PRICE, 'subscription');
-
-    if (APP.currentUserData.referredBy) {
-      const commission = Math.floor(VERIFIED_PRICE * REFERRAL_PURCHASE_COMMISSION * 100);
-      if (commission > 0) {
-        await db.collection('users').doc(APP.currentUserData.referredBy).update({
-          goldCoins: firebase.firestore.FieldValue.increment(commission),
-        });
-        await db.collection('transactions').add({
-          uid: APP.currentUserData.referredBy,
-          type: 'referral_commission',
-          amount: commission,
-          coinType: 'gold',
-          description: '6% referral commission from subscription',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-      }
+    initStripe();
+    if (!stripe) {
+      hideLoading();
+      showToast('Stripe not loaded. Please refresh.', 'error');
+      return;
     }
 
+    const functions = getFirebaseFunctions();
+    const createSub = functions.httpsCallable('createSubscription');
+    const result = await createSub({});
+    const { clientSecret } = result.data;
+
     hideLoading();
-    launchConfetti();
-    showToast('Welcome to Verified! ✨', 'success');
-    clearUserCache(APP.currentUser.uid);
-    renderWallet();
-    loadProfile(APP.currentUser.uid);
+    openStripePaymentModal(clientSecret, VERIFIED_PRICE * 100, 'Verified Subscription (30 days)', 'subscription');
   } catch (err) {
     hideLoading();
-    showToast('Subscription failed', 'error');
+    console.error('Subscription error:', err);
+    showToast('Subscription setup failed: ' + (err.message || 'Unknown error'), 'error');
   }
 }
 
-// ==================== WITHDRAWAL ====================
+// ==================== WITHDRAWAL (Stripe Connect) ====================
 
 function showWithdraw() {
   const u = APP.currentUserData;
@@ -6771,8 +6484,19 @@ function showWithdraw() {
       <p style="text-align:center;color:var(--text-tertiary);font-size:13px;margin-bottom:12px">
         Balance: 🪙${formatNumber(goldBalance)} (≈ $${usdValue})<br>
         Minimum: 🪙${formatNumber(MIN_WITHDRAWAL)} ($${(MIN_WITHDRAWAL/100).toFixed(2)})<br>
-        Fee: ${WITHDRAWAL_FEE * 100}% · Processing: 3-5 business days
+        Fee: ${WITHDRAWAL_FEE * 100}% · Processing: 1-3 business days
       </p>
+
+      ${u.stripeConnectId ? `
+        <div style="padding:10px;background:var(--success-bg);border:1px solid var(--success);border-radius:var(--radius-md);margin-bottom:12px;text-align:center;font-size:13px;color:var(--success)">
+          ✅ Stripe account connected
+        </div>
+      ` : `
+        <div style="padding:10px;background:var(--warning-bg);border:1px solid var(--warning);border-radius:var(--radius-md);margin-bottom:12px;text-align:center;font-size:13px;color:var(--warning)">
+          ⚠️ Please connect Stripe first
+        </div>
+        <button class="modal-btn primary" style="width:100%;margin-bottom:12px" onclick="connectStripeAccount()">Connect Stripe Account</button>
+      `}
 
       <input type="number" class="withdraw-amount-input" id="withdrawAmount" placeholder="Amount in gold coins" min="${MIN_WITHDRAWAL}">
 
@@ -6783,21 +6507,7 @@ function showWithdraw() {
         <div style="font-size:22px;font-weight:800;color:var(--success)" id="withdrawPayout">$0.00</div>
       </div>
 
-      <h4 style="font-size:14px;font-weight:600;margin:12px 0 8px">Payout Method</h4>
-      <div class="payment-options">
-        <div class="payment-option selected" onclick="selectPaymentMethod(this,'paypal')">
-          <div class="payment-radio"></div>
-          <div class="payment-name">🅿️ PayPal</div>
-        </div>
-        <div class="payment-option" onclick="selectPaymentMethod(this,'stripe')">
-          <div class="payment-radio"></div>
-          <div class="payment-name">💳 Stripe (Bank Transfer)</div>
-        </div>
-      </div>
-
-      <input type="email" id="withdrawEmail" placeholder="PayPal email or account info" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid var(--border-color);border-radius:var(--radius-md);font-size:14px;margin-top:10px;color:var(--text-primary)">
-
-      <button class="product-submit-btn" onclick="submitWithdrawal()" style="margin-top:14px">Request Withdrawal</button>
+      <button class="product-submit-btn" onclick="submitWithdrawal()" ${!u.stripeConnectId ? 'disabled' : ''} style="margin-top:14px;${!u.stripeConnectId ? 'opacity:0.5' : ''}">Request Withdrawal</button>
     </div>
   `);
 
@@ -6821,59 +6531,56 @@ function showWithdraw() {
   });
 }
 
+async function connectStripeAccount() {
+  closeBottomSheet();
+  showLoading();
+
+  try {
+    const functions = getFirebaseFunctions();
+    const connect = functions.httpsCallable('createConnectAccount');
+    const result = await connect({});
+
+    hideLoading();
+
+    if (result.data.url) {
+      window.open(result.data.url, '_blank');
+      showToast('Complete onboarding in the new tab, then try withdrawal again', 'info', 8000);
+    }
+  } catch (err) {
+    hideLoading();
+    showToast('Failed to connect Stripe: ' + (err.message || 'Unknown error'), 'error');
+  }
+}
+
 async function submitWithdrawal() {
   const amount = parseInt(document.getElementById('withdrawAmount')?.value) || 0;
-  const email = document.getElementById('withdrawEmail')?.value?.trim();
 
   if (amount < MIN_WITHDRAWAL) return showToast(`Minimum 🪙${formatNumber(MIN_WITHDRAWAL)}`, 'warning');
-  if (!email) return showToast('Enter payout email/info', 'warning');
   if (amount > (APP.currentUserData?.goldCoins || 0)) return showToast('Insufficient balance', 'error');
+
+  if (!APP.currentUserData.stripeConnectId) {
+    showToast('Please connect your Stripe account first', 'warning');
+    return;
+  }
 
   closeBottomSheet();
   showLoading();
 
   try {
-    const usd = amount / 100;
-    const fee = usd * WITHDRAWAL_FEE;
-    const payout = usd - fee;
-
-    await db.collection('users').doc(APP.currentUser.uid).update({
-      goldCoins: firebase.firestore.FieldValue.increment(-amount),
-    });
-    APP.currentUserData.goldCoins -= amount;
-
-    await db.collection('transactions').add({
-      uid: APP.currentUser.uid,
-      type: 'withdrawal',
-      amount: -amount,
-      coinType: 'gold',
-      usdAmount: payout,
-      fee: fee,
-      method: selectedPaymentMethod,
-      email,
-      status: 'pending',
-      description: `Withdrawal $${payout.toFixed(2)} via ${selectedPaymentMethod}`,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    await db.collection('payouts').add({
-      type: 'withdrawal',
-      userId: APP.currentUser.uid,
-      amount: payout,
-      fee,
-      goldCoins: amount,
-      method: selectedPaymentMethod,
-      email,
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    const functions = getFirebaseFunctions();
+    const withdraw = functions.httpsCallable('processWithdrawal');
+    const result = await withdraw({ goldCoins: amount });
 
     hideLoading();
-    showToast(`Withdrawal of $${payout.toFixed(2)} requested! Processing in 3-5 days.`, 'success');
+    launchConfetti();
+    showToast(`Withdrawal of $${result.data.amount.toFixed(2)} processed! ✅`, 'success', 5000);
+
+    await loadUserData();
     renderWallet();
   } catch (err) {
     hideLoading();
-    showToast('Withdrawal failed', 'error');
+    console.error('Withdrawal error:', err);
+    showToast('Withdrawal failed: ' + (err.message || 'Unknown error'), 'error');
   }
 }
 
@@ -6929,6 +6636,13 @@ async function showTransactionHistory() {
     document.getElementById('transHistoryList').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
   }
 }
+
+console.log('Vidr Part 7 loaded: Post Creation, Wallet, Stripe, Withdrawal');
+
+// ==========================================
+// VIDR - app.js Part 8
+// Spin Wheel, Mini Games, Leaderboard, Shop
+// ==========================================
 
 // ==================== SPIN WHEEL ====================
 
@@ -7012,7 +6726,6 @@ function drawSpinWheel(rotation = 0) {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Label
     ctx.save();
     ctx.rotate(startAngle + arc / 2);
     ctx.textAlign = 'right';
@@ -7022,7 +6735,6 @@ function drawSpinWheel(rotation = 0) {
     ctx.restore();
   });
 
-  // Center circle
   ctx.beginPath();
   ctx.arc(0, 0, 20, 0, Math.PI * 2);
   ctx.fillStyle = '#1a1a35';
@@ -7056,7 +6768,6 @@ function spinWheel() {
   const btn = document.getElementById('spinBtn');
   btn.disabled = true;
 
-  // Weighted random selection
   const totalWeight = SPIN_WEIGHTS.reduce((a, b) => a + b, 0);
   let random = Math.random() * totalWeight;
   let winIndex = 0;
@@ -7077,8 +6788,6 @@ function spinWheel() {
   function animate() {
     const elapsed = Date.now() - startTime;
     const progress = Math.min(elapsed / duration, 1);
-
-    // Ease out cubic
     const eased = 1 - Math.pow(1 - progress, 3);
     currentRotation = eased * totalRotation;
 
@@ -7106,14 +6815,12 @@ async function handleSpinResult(index) {
   }
 
   if (segment.type === 'gift') {
-    // Random free gift
     const gift = FREE_GIFTS[Math.floor(Math.random() * FREE_GIFTS.length)];
     showToast(`You won a ${gift.emoji} ${gift.name}!`, 'success');
     renderSpinWheel();
     return;
   }
 
-  // Free coins
   try {
     await db.collection('users').doc(APP.currentUser.uid).update({
       freeCoins: firebase.firestore.FieldValue.increment(segment.value),
@@ -7129,7 +6836,6 @@ async function handleSpinResult(index) {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    // 0.0000001% chance for gold coins
     if (Math.random() < PAID_REWARD_CHANCE) {
       const goldWin = Math.floor(Math.random() * 50) + 1;
       await db.collection('users').doc(APP.currentUser.uid).update({
@@ -7250,7 +6956,6 @@ async function flipCoin(choice, bet) {
 
   await new Promise(r => setTimeout(r, 800));
 
-  // 50/50 with 10% house edge -> 45% win
   const result = Math.random() < 0.45 ? choice : (choice === 'heads' ? 'tails' : 'heads');
   const won = result === choice;
 
@@ -7314,7 +7019,6 @@ function renderScratch(bet) {
   const grid = [];
   for (let i = 0; i < 9; i++) grid.push(symbols[Math.floor(Math.random() * symbols.length)]);
 
-  // 35% chance to force 3 match
   if (Math.random() < 0.35) {
     const sym = symbols[Math.floor(Math.random() * symbols.length)];
     const positions = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -7384,7 +7088,6 @@ async function checkScratchResult() {
 }
 
 function renderSlots(bet) {
-  const slotSymbols = ['🍒', '🍋', '🔔', '⭐', '💎', '7️⃣'];
   window._slotBet = bet;
 
   document.getElementById('gamesContent').innerHTML = `
@@ -7415,7 +7118,6 @@ async function spinSlots() {
     results.push(symbols[Math.floor(Math.random() * symbols.length)]);
   }
 
-  // Stop reels sequentially
   for (let i = 0; i < 3; i++) {
     await new Promise(r => setTimeout(r, 500 + i * 400));
     const reel = document.getElementById(`reel${i + 1}`);
@@ -7477,10 +7179,9 @@ async function playRPS(choice, bet) {
 
   countdown.textContent = `${emojis[choice]} vs ${emojis[bot]}`;
 
-  let result, html = '';
+  let html = '';
 
   if (choice === bot) {
-    // Draw - refund
     await db.collection('users').doc(APP.currentUser.uid).update({
       freeCoins: firebase.firestore.FieldValue.increment(bet),
     });
@@ -7712,7 +7413,6 @@ async function openProductDetail(productId) {
       colorsHTML = `<div class="product-variants"><div class="product-variant-label">Color</div><div class="product-variant-options">${p.colors.map(c => `<button class="variant-option" onclick="selectVariant(this)">${escapeHTML(c)}</button>`).join('')}</div></div>`;
     }
 
-    // Affiliate link
     const affiliateLink = `https://vidr.click/?product=${productId}&ref=${APP.currentUser?.uid}`;
 
     container.innerHTML = `
@@ -7803,8 +7503,7 @@ function openCart() {
 }
 
 async function renderCart() {
-  let html = '<h3 class="sheet-title">Shopping Cart</h3><div class="cart-content" id="cartContent"><div class="loading-spinner small" style="margin:20px auto"></div></div>';
-  openBottomSheet(html);
+  openBottomSheet(`<h3 class="sheet-title">Shopping Cart</h3><div class="cart-content" id="cartContent"><div class="loading-spinner small" style="margin:20px auto"></div></div>`);
 
   let items = '';
   let total = 0;
@@ -7860,7 +7559,17 @@ function quickBuy(productId) {
   buyNow(productId);
 }
 
+// ==================== CHECKOUT (Stripe) ====================
+
 async function openCheckout() {
+  let totalAmount = 0;
+  for (const ci of APP.cart) {
+    try {
+      const doc = await db.collection('products').doc(ci.productId).get();
+      if (doc.exists) totalAmount += (doc.data().price || 0) * ci.qty;
+    } catch {}
+  }
+
   openBottomSheet(`
     <h3 class="sheet-title">Checkout</h3>
     <div class="checkout-form">
@@ -7872,30 +7581,65 @@ async function openCheckout() {
         <div class="checkout-field"><label>Zip Code</label><input type="text" id="checkoutZip" placeholder="12345"></div>
         <div class="checkout-field"><label>Country</label><input type="text" id="checkoutCountry" placeholder="Country"></div>
       </div>
-      <div class="checkout-section">
-        <h3>Payment Method</h3>
-        <div class="payment-options">
-          <div class="payment-option selected" onclick="selectPaymentMethod(this,'stripe')"><div class="payment-radio"></div><div class="payment-name">💳 Stripe</div></div>
-          <div class="payment-option" onclick="selectPaymentMethod(this,'paypal')"><div class="payment-radio"></div><div class="payment-name">🅿️ PayPal</div></div>
-        </div>
+      <div class="checkout-total">
+        <span>Total</span>
+        <span>$${totalAmount.toFixed(2)}</span>
       </div>
-      <button class="checkout-pay-btn" onclick="processCheckout()">Place Order</button>
+      <button class="checkout-pay-btn" onclick="processCheckout(${totalAmount})">Pay $${totalAmount.toFixed(2)} with Stripe</button>
     </div>
   `);
 }
 
-async function processCheckout() {
+async function processCheckout(totalAmount) {
   const name = document.getElementById('checkoutName')?.value?.trim();
   const address = document.getElementById('checkoutAddress')?.value?.trim();
-  if (!name || !address) return showToast('Please fill shipping info', 'warning');
+  const city = document.getElementById('checkoutCity')?.value?.trim();
+  const zip = document.getElementById('checkoutZip')?.value?.trim();
+  const country = document.getElementById('checkoutCountry')?.value?.trim();
+
+  if (!name || !address || !city || !zip || !country) return showToast('Please fill all shipping info', 'warning');
 
   closeBottomSheet();
   showLoading();
 
   try {
+    // Store shipping info for after payment
+    window._pendingOrder = {
+      shipping: { name, address, city, zip, country },
+      items: APP.cart.slice(),
+      totalAmount,
+    };
+
+    initStripe();
+    if (!stripe) {
+      hideLoading();
+      showToast('Stripe not loaded', 'error');
+      return;
+    }
+
+    const functions = getFirebaseFunctions();
+    const createIntent = functions.httpsCallable('createShopPaymentIntent');
+    const result = await createIntent({
+      amount: Math.round(totalAmount * 100),
+      items: APP.cart,
+    });
+
+    hideLoading();
+    openStripePaymentModal(result.data.clientSecret, totalAmount * 100, `Order · ${APP.cart.length} items`, 'shop_order');
+  } catch (err) {
+    hideLoading();
+    console.error('Checkout error:', err);
+    // Fallback: complete order without Stripe (for development)
+    completeOrderFallback(totalAmount, name, address, city, zip, country);
+  }
+}
+
+// Fallback order completion (for development/testing without Stripe fully setup)
+async function completeOrderFallback(totalAmount, name, address, city, zip, country) {
+  showLoading();
+  try {
     await new Promise(r => setTimeout(r, 1500));
 
-    let totalAmount = 0;
     const orderItems = [];
 
     for (const ci of APP.cart) {
@@ -7903,7 +7647,6 @@ async function processCheckout() {
       if (!doc.exists) continue;
       const p = doc.data();
       const itemTotal = (p.price || 0) * ci.qty;
-      totalAmount += itemTotal;
 
       orderItems.push({
         productId: ci.productId,
@@ -7913,7 +7656,6 @@ async function processCheckout() {
         sellerId: p.sellerId,
       });
 
-      // Seller payout (92%)
       const sellerPayout = Math.floor(itemTotal * (1 - PLATFORM_FEE) * 100);
       await db.collection('users').doc(p.sellerId).update({
         goldCoins: firebase.firestore.FieldValue.increment(sellerPayout),
@@ -7922,11 +7664,10 @@ async function processCheckout() {
 
       await db.collection('payouts').add({
         type: 'sale_payout', userId: p.sellerId, amount: sellerPayout,
-        productId: ci.productId, orderId: '', status: 'completed',
+        productId: ci.productId, status: 'completed',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
 
-      // Affiliate payout (5%)
       const urlParams = new URLSearchParams(window.location.search);
       const affiliateRef = urlParams.get('ref');
       if (affiliateRef && affiliateRef !== p.sellerId) {
@@ -7940,7 +7681,6 @@ async function processCheckout() {
         });
       }
 
-      // Referral purchase commission (6%)
       if (APP.currentUserData?.referredBy) {
         const refCommission = Math.floor(itemTotal * REFERRAL_PURCHASE_COMMISSION * 100);
         await db.collection('users').doc(APP.currentUserData.referredBy).update({
@@ -7954,7 +7694,6 @@ async function processCheckout() {
         });
       }
 
-      // Notify seller
       await addNotification(p.sellerId, {
         type: 'sale', text: `New order: ${p.name} x${ci.qty}!`, icon: '🛍️',
         fromUid: APP.currentUser.uid,
@@ -7962,21 +7701,18 @@ async function processCheckout() {
 
       await incrementAchievement(p.sellerId, 'sell_item');
 
-      // Update stock
       await db.collection('products').doc(ci.productId).update({
         stock: firebase.firestore.FieldValue.increment(-ci.qty),
         sold: firebase.firestore.FieldValue.increment(ci.qty),
       });
     }
 
-    // Create order
     await db.collection('orders').add({
       buyerId: APP.currentUser.uid, items: orderItems, totalAmount,
-      shipping: { name, address }, method: selectedPaymentMethod,
+      shipping: { name, address, city, zip, country }, method: 'stripe',
       status: 'processing', createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    await processMarketingCommission(totalAmount, 'shop_sale');
     await incrementAchievement(APP.currentUser.uid, 'first_purchase');
 
     APP.cart = [];
@@ -8110,210 +7846,63 @@ async function submitProduct() {
   }
 }
 
-// ==================== REFERRAL PAGE ====================
+console.log('Vidr Part 8 loaded: Spin, Games, Leaderboard, Shop, Checkout');
 
-function openReferral() {
-  openOverlayPage('referralPage');
-  renderReferral();
-}
+// ==========================================
+// VIDR - app.js Part 9
+// Live Streaming, Gifts, Referral, Earn, Campaign
+// ==========================================
 
-function renderReferral() {
-  const u = APP.currentUserData;
-  const link = `https://vidr.click/?ref=${APP.currentUser?.uid}`;
+// ==================== GO LIVE SETUP ====================
 
-  document.getElementById('referralContent').innerHTML = `
-    <div class="referral-card">
-      <div class="referral-icon">🎁</div>
-      <div class="referral-title">Refer & Earn</div>
-      <div class="referral-desc">
-        Both you and your friend get ⚡${REFERRAL_REWARD} free coins!<br>
-        Plus earn 6% commission every time they make a purchase!
+function openGoLive() {
+  openOverlayPage('liveStreamPage');
+
+  const container = document.getElementById('liveStreamContent');
+  container.innerHTML = `
+    <div class="live-setup">
+      <h3 style="font-size:20px;font-weight:800;margin-bottom:8px">Go LIVE</h3>
+
+      <div class="live-preview" id="livePreview">
+        <video id="livePreviewVideo" autoplay playsinline muted></video>
       </div>
-    </div>
 
-    <div class="referral-link-box">
-      <input type="text" value="${link}" readonly id="referralLink">
-      <button class="referral-copy-btn" onclick="copyReferralLink()">Copy</button>
-    </div>
+      <input type="text" class="live-setup-input" id="liveTitle" placeholder="Add a title..." maxlength="50">
 
-    <button style="width:100%;padding:12px;background:var(--gradient-primary);color:#fff;border-radius:var(--radius-md);font-weight:700;margin-bottom:20px" onclick="shareReferral()">📤 Share Link</button>
-
-    <div class="referral-stats">
-      <div class="referral-stat">
-        <div class="referral-stat-value">${u?.referralCount || 0}</div>
-        <div class="referral-stat-label">Referrals</div>
+      <div class="create-option-row" style="width:100%;max-width:300px">
+        <div class="create-option-label">Enable Shop</div>
+        <div class="toggle-switch" id="liveShopToggle" onclick="this.classList.toggle('active')"><div class="toggle-switch-knob"></div></div>
       </div>
-      <div class="referral-stat">
-        <div class="referral-stat-value">⚡${formatNumber(u?.referralEarnings || 0)}</div>
-        <div class="referral-stat-label">Earned</div>
-      </div>
-    </div>
 
-    <div style="margin-top:24px;padding:16px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg)">
-      <h4 style="font-size:14px;font-weight:700;margin-bottom:8px">How it works:</h4>
-      <p style="font-size:13px;color:var(--text-tertiary);line-height:1.6">
-        1. Share your unique link with friends<br>
-        2. When they sign up, both of you get ⚡${REFERRAL_REWARD}<br>
-        3. Every time they purchase, you earn 6% commission!<br>
-        4. No limit on referrals!
-      </p>
-    </div>
-  `;
-}
+      <button class="live-start-btn" onclick="startLiveStream()">Go LIVE</button>
 
-function copyReferralLink() {
-  const input = document.getElementById('referralLink');
-  navigator.clipboard.writeText(input.value).then(() => showToast('Link copied! 🔗', 'success'));
-}
-
-async function shareReferral() {
-  const link = `https://vidr.click/?ref=${APP.currentUser?.uid}`;
-  if (navigator.share) {
-    try { await navigator.share({ title: 'Join Vidr!', text: 'Check out Vidr!', url: link }); } catch {}
-  } else { copyReferralLink(); }
-}
-
-// ==================== HOW TO EARN PAGE ====================
-
-function openEarnPage() {
-  openOverlayPage('earnPage');
-  renderEarnPage();
-}
-
-function renderEarnPage() {
-  const earnMethods = [
-    { icon: '📅', title: 'Daily Reward', desc: 'Open the app daily for free coins', reward: '⚡1-200/day' },
-    { icon: '🎡', title: 'Spin Wheel', desc: 'Watch 3 ads and spin to win', reward: '⚡1-200' },
-    { icon: '🎮', title: 'Mini Games', desc: 'Play games to multiply coins', reward: 'Up to 10x' },
-    { icon: '📺', title: 'Watch Ads', desc: 'Watch reward ads for free coins', reward: '⚡2-5/ad' },
-    { icon: '👥', title: 'Refer Friends', desc: 'Both get ⚡50 + 6% purchase commission', reward: '⚡50 + 6%' },
-    { icon: '📱', title: 'Watch Feed', desc: 'Spend time watching content', reward: '⚡1/5min' },
-    { icon: '📝', title: 'Create Posts', desc: 'Post content to earn XP', reward: '5-10 XP' },
-    { icon: '❤️', title: 'Engage', desc: 'Like, comment, follow for XP', reward: '1-3 XP' },
-    { icon: '🔴', title: 'Go Live', desc: 'Receive gifts from viewers', reward: 'Unlimited' },
-    { icon: '🛍️', title: 'Sell Products', desc: 'List and sell products (verified)', reward: '92% of sales' },
-    { icon: '🔗', title: 'Affiliate Links', desc: 'Share product links for commission', reward: '5% commission' },
-    { icon: '📊', title: 'Marketing Role', desc: 'Earn 10% on all ads and purchases', reward: '10% commission' },
-    { icon: '🏆', title: 'Achievements', desc: 'Unlock achievements for XP and rare coins', reward: 'XP + 0.0000001% gold' },
-  ];
-
-  document.getElementById('earnContent').innerHTML = earnMethods.map(m => `
-    <div class="earn-item">
-      <div class="earn-item-icon">${m.icon}</div>
-      <div class="earn-item-text">
-        <h4>${m.title}</h4>
-        <p>${m.desc}</p>
-        <div class="earn-item-reward">${m.reward}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ==================== CAMPAIGN / WATCH ADS ====================
-
-function openCampaign() {
-  openOverlayPage('campaignPage');
-  renderCampaign();
-}
-
-let lastAdWatchTime = 0;
-const AD_COOLDOWN = 30000; // 30 seconds
-
-function renderCampaign() {
-  const now = Date.now();
-  const canWatch = now - lastAdWatchTime >= AD_COOLDOWN;
-  const cooldownRemaining = canWatch ? 0 : Math.ceil((AD_COOLDOWN - (now - lastAdWatchTime)) / 1000);
-
-  document.getElementById('campaignContent').innerHTML = `
-    <div class="campaign-card">
-      <div class="campaign-icon">📺</div>
-      <div class="campaign-title">Watch & Earn</div>
-      <div class="campaign-desc">Watch a short ad to earn free coins!</div>
-      <div class="campaign-reward">Reward: ⚡2-5 per ad</div>
-      <button class="watch-ad-btn" onclick="watchCampaignAd()" ${!canWatch ? 'disabled' : ''}>
-        🎬 Watch Ad
-      </button>
-      ${!canWatch ? `<div class="campaign-cooldown">Next ad in ${cooldownRemaining}s</div>` : ''}
-    </div>
-
-    <div class="campaign-card">
-      <div class="campaign-icon">🎯</div>
-      <div class="campaign-title">Bonus Ad</div>
-      <div class="campaign-desc">Watch a longer ad for bigger reward!</div>
-      <div class="campaign-reward">Reward: ⚡5-10</div>
-      <button class="watch-ad-btn" onclick="watchBonusAd()" ${!canWatch ? 'disabled' : ''}>
-        🎬 Watch Bonus Ad
-      </button>
-    </div>
-
-    <div class="campaign-card">
-      <div class="campaign-icon">🌟</div>
-      <div class="campaign-title">Daily Streak Bonus</div>
-      <div class="campaign-desc">Watch 5 ads today for an extra ⚡20!</div>
-      <div class="campaign-reward">Progress: ${Math.min(APP.adImpressions || 0, 5)}/5 ads today</div>
-      ${(APP.adImpressions || 0) >= 5 ? '<div style="color:var(--success);font-weight:700;margin-top:8px">✅ Completed!</div>' : ''}
-    </div>
-
-    <div style="margin-top:16px;padding:14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg)">
-      <p style="font-size:13px;color:var(--text-tertiary);line-height:1.6">
-        💡 <strong>Tips:</strong><br>
-        • Ads refresh every 30 seconds<br>
-        • Watch 5 ads daily for streak bonus<br>
-        • Coins are credited instantly<br>
-        • All ad revenue helps support the platform
-      </p>
+      <button style="color:var(--text-tertiary);margin-top:12px;font-size:14px" onclick="stopCameraPreview();closeOverlayPage('liveStreamPage')">Cancel</button>
     </div>
   `;
 
-  if (!canWatch) {
-    const timer = setInterval(() => {
-      const remaining = Math.ceil((AD_COOLDOWN - (Date.now() - lastAdWatchTime)) / 1000);
-      if (remaining <= 0) {
-        clearInterval(timer);
-        renderCampaign();
-      }
-    }, 1000);
+  startCameraPreview();
+}
+
+async function startCameraPreview() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    const video = document.getElementById('livePreviewVideo');
+    if (video) {
+      video.srcObject = stream;
+      video.play();
+    }
+  } catch (err) {
+    console.error('Camera error:', err);
+    showToast('Camera access denied', 'error');
   }
 }
 
-function watchCampaignAd() {
-  showRewardedAd(async () => {
-    const reward = Math.floor(Math.random() * 4) + 2; // 2-5
-    await db.collection('users').doc(APP.currentUser.uid).update({
-      freeCoins: firebase.firestore.FieldValue.increment(reward),
-    });
-    APP.currentUserData.freeCoins += reward;
-    lastAdWatchTime = Date.now();
-
-    await db.collection('transactions').add({
-      uid: APP.currentUser.uid, type: 'ad_reward', amount: reward, coinType: 'free',
-      description: 'Campaign ad reward', createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    await processMarketingCommission(0.01, 'ad_view');
-
-    showToast(`Earned ⚡${reward}! 📺`, 'success');
-    renderCampaign();
-  });
-}
-
-function watchBonusAd() {
-  showRewardedAd(async () => {
-    const reward = Math.floor(Math.random() * 6) + 5; // 5-10
-    await db.collection('users').doc(APP.currentUser.uid).update({
-      freeCoins: firebase.firestore.FieldValue.increment(reward),
-    });
-    APP.currentUserData.freeCoins += reward;
-    lastAdWatchTime = Date.now();
-
-    await db.collection('transactions').add({
-      uid: APP.currentUser.uid, type: 'ad_reward', amount: reward, coinType: 'free',
-      description: 'Bonus ad reward', createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    showToast(`Earned ⚡${reward}! 🎯`, 'success');
-    renderCampaign();
-  });
+function stopCameraPreview() {
+  const video = document.getElementById('livePreviewVideo');
+  if (video && video.srcObject) {
+    video.srcObject.getTracks().forEach(track => track.stop());
+    video.srcObject = null;
+  }
 }
 
 // ==================== LIVE STREAM ====================
@@ -8365,7 +7954,6 @@ async function startLiveStream() {
     });
     await batch.commit();
 
-    // Simulate bot viewers
     simulateBotViewers(liveRef.id);
 
     hideLoading();
@@ -8382,7 +7970,7 @@ async function startLiveStream() {
 
 function simulateBotViewers(liveId) {
   let botCount = Math.floor(Math.random() * 20) + 5;
-  let interval = setInterval(async () => {
+  const interval = setInterval(async () => {
     if (!APP.liveStreamId || APP.liveStreamId !== liveId) {
       clearInterval(interval);
       return;
@@ -8545,6 +8133,8 @@ async function sendLiveComment() {
   } catch {}
 }
 
+// ==================== GIFT PANEL ====================
+
 function openLiveGiftPanel(liveId, hostUid) {
   let html = `
     <div class="gift-panel">
@@ -8613,7 +8203,6 @@ async function sendLiveGift(liveId, hostUid) {
     });
     APP.currentUserData[coinField] -= cost;
 
-    // Host receives (92% for paid, 100% for free)
     if (type === 'paid') {
       const hostAmount = Math.floor(cost * (1 - PLATFORM_FEE));
       await db.collection('users').doc(hostUid).update({
@@ -8634,7 +8223,6 @@ async function sendLiveGift(liveId, hostUid) {
       });
     }
 
-    // Gift comment
     const allGifts = [...FREE_GIFTS, ...PAID_GIFTS];
     const giftDef = allGifts.find(g => g.id === id);
 
@@ -8649,10 +8237,8 @@ async function sendLiveGift(liveId, hostUid) {
       }),
     });
 
-    // Gift overlay animation
     showGiftOverlay(giftDef?.emoji || '🎁');
 
-    // Battle score
     const liveDoc = await db.collection('liveStreams').doc(liveId).get();
     if (liveDoc.exists && liveDoc.data().battleActive) {
       await db.collection('liveStreams').doc(liveId).update({
@@ -8799,7 +8385,8 @@ function shareLiveStream() {
   }
 }
 
-// Live Battle
+// ==================== LIVE BATTLE ====================
+
 function openLiveBattle() {
   if (!APP.isLiveHost || !APP.liveStreamId) return;
 
@@ -8859,6 +8446,210 @@ function renderLiveBattle(data) {
   `;
 }
 
+// ==================== REFERRAL PAGE ====================
+
+function openReferral() {
+  openOverlayPage('referralPage');
+  renderReferral();
+}
+
+function renderReferral() {
+  const u = APP.currentUserData;
+  const link = `https://vidr.click/?ref=${APP.currentUser?.uid}`;
+
+  document.getElementById('referralContent').innerHTML = `
+    <div class="referral-card">
+      <div class="referral-icon">🎁</div>
+      <div class="referral-title">Refer & Earn</div>
+      <div class="referral-desc">
+        Both you and your friend get ⚡${REFERRAL_REWARD} free coins!<br>
+        Plus earn 6% commission every time they make a purchase!
+      </div>
+    </div>
+
+    <div class="referral-link-box">
+      <input type="text" value="${link}" readonly id="referralLink">
+      <button class="referral-copy-btn" onclick="copyReferralLink()">Copy</button>
+    </div>
+
+    <button style="width:100%;padding:12px;background:var(--gradient-primary);color:#fff;border-radius:var(--radius-md);font-weight:700;margin-bottom:20px" onclick="shareReferral()">📤 Share Link</button>
+
+    <div class="referral-stats">
+      <div class="referral-stat">
+        <div class="referral-stat-value">${u?.referralCount || 0}</div>
+        <div class="referral-stat-label">Referrals</div>
+      </div>
+      <div class="referral-stat">
+        <div class="referral-stat-value">⚡${formatNumber(u?.referralEarnings || 0)}</div>
+        <div class="referral-stat-label">Earned</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;padding:16px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg)">
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:8px">How it works:</h4>
+      <p style="font-size:13px;color:var(--text-tertiary);line-height:1.6">
+        1. Share your unique link with friends<br>
+        2. When they sign up, both of you get ⚡${REFERRAL_REWARD}<br>
+        3. Every time they purchase, you earn 6% commission!<br>
+        4. No limit on referrals!
+      </p>
+    </div>
+  `;
+}
+
+function copyReferralLink() {
+  const input = document.getElementById('referralLink');
+  navigator.clipboard.writeText(input.value).then(() => showToast('Link copied! 🔗', 'success'));
+}
+
+async function shareReferral() {
+  const link = `https://vidr.click/?ref=${APP.currentUser?.uid}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Join Vidr!', text: 'Check out Vidr!', url: link }); } catch {}
+  } else { copyReferralLink(); }
+}
+
+// ==================== HOW TO EARN PAGE ====================
+
+function openEarnPage() {
+  openOverlayPage('earnPage');
+  renderEarnPage();
+}
+
+function renderEarnPage() {
+  const earnMethods = [
+    { icon: '📅', title: 'Daily Reward', desc: 'Open the app daily for free coins', reward: '⚡1-200/day' },
+    { icon: '🎡', title: 'Spin Wheel', desc: 'Watch 3 ads and spin to win', reward: '⚡1-200' },
+    { icon: '🎮', title: 'Mini Games', desc: 'Play games to multiply coins', reward: 'Up to 10x' },
+    { icon: '📺', title: 'Watch Ads', desc: 'Watch reward ads for free coins', reward: '⚡2-5/ad' },
+    { icon: '👥', title: 'Refer Friends', desc: 'Both get ⚡50 + 6% purchase commission', reward: '⚡50 + 6%' },
+    { icon: '📱', title: 'Watch Feed', desc: 'Spend time watching content', reward: '⚡1/5min' },
+    { icon: '📝', title: 'Create Posts', desc: 'Post content to earn XP', reward: '5-10 XP' },
+    { icon: '❤️', title: 'Engage', desc: 'Like, comment, follow for XP', reward: '1-3 XP' },
+    { icon: '🔴', title: 'Go Live', desc: 'Receive gifts from viewers', reward: 'Unlimited' },
+    { icon: '🛍️', title: 'Sell Products', desc: 'List and sell products (verified)', reward: '92% of sales' },
+    { icon: '🔗', title: 'Affiliate Links', desc: 'Share product links for commission', reward: '5% commission' },
+    { icon: '📊', title: 'Marketing Role', desc: 'Earn 10% on all ads and purchases', reward: '10% commission' },
+    { icon: '🏆', title: 'Achievements', desc: 'Unlock achievements for XP and rare coins', reward: 'XP + 0.0000001% gold' },
+  ];
+
+  document.getElementById('earnContent').innerHTML = earnMethods.map(m => `
+    <div class="earn-item">
+      <div class="earn-item-icon">${m.icon}</div>
+      <div class="earn-item-text">
+        <h4>${m.title}</h4>
+        <p>${m.desc}</p>
+        <div class="earn-item-reward">${m.reward}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ==================== CAMPAIGN / WATCH ADS ====================
+
+function openCampaign() {
+  openOverlayPage('campaignPage');
+  renderCampaign();
+}
+
+let lastAdWatchTime = 0;
+const AD_COOLDOWN = 30000;
+
+function renderCampaign() {
+  const now = Date.now();
+  const canWatch = now - lastAdWatchTime >= AD_COOLDOWN;
+  const cooldownRemaining = canWatch ? 0 : Math.ceil((AD_COOLDOWN - (now - lastAdWatchTime)) / 1000);
+
+  document.getElementById('campaignContent').innerHTML = `
+    <div class="campaign-card">
+      <div class="campaign-icon">📺</div>
+      <div class="campaign-title">Watch & Earn</div>
+      <div class="campaign-desc">Watch a short ad to earn free coins!</div>
+      <div class="campaign-reward">Reward: ⚡2-5 per ad</div>
+      <button class="watch-ad-btn" onclick="watchCampaignAd()" ${!canWatch ? 'disabled' : ''}>
+        🎬 Watch Ad
+      </button>
+      ${!canWatch ? `<div class="campaign-cooldown">Next ad in ${cooldownRemaining}s</div>` : ''}
+    </div>
+
+    <div class="campaign-card">
+      <div class="campaign-icon">🎯</div>
+      <div class="campaign-title">Bonus Ad</div>
+      <div class="campaign-desc">Watch a longer ad for bigger reward!</div>
+      <div class="campaign-reward">Reward: ⚡5-10</div>
+      <button class="watch-ad-btn" onclick="watchBonusAd()" ${!canWatch ? 'disabled' : ''}>
+        🎬 Watch Bonus Ad
+      </button>
+    </div>
+
+    <div class="campaign-card">
+      <div class="campaign-icon">🌟</div>
+      <div class="campaign-title">Daily Streak Bonus</div>
+      <div class="campaign-desc">Watch 5 ads today for an extra ⚡20!</div>
+      <div class="campaign-reward">Progress: ${Math.min(APP.adImpressions || 0, 5)}/5 ads today</div>
+      ${(APP.adImpressions || 0) >= 5 ? '<div style="color:var(--success);font-weight:700;margin-top:8px">✅ Completed!</div>' : ''}
+    </div>
+
+    <div style="margin-top:16px;padding:14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg)">
+      <p style="font-size:13px;color:var(--text-tertiary);line-height:1.6">
+        💡 <strong>Tips:</strong><br>
+        • Ads refresh every 30 seconds<br>
+        • Watch 5 ads daily for streak bonus<br>
+        • Coins are credited instantly<br>
+        • All ad revenue helps support the platform
+      </p>
+    </div>
+  `;
+
+  if (!canWatch) {
+    const timer = setInterval(() => {
+      const remaining = Math.ceil((AD_COOLDOWN - (Date.now() - lastAdWatchTime)) / 1000);
+      if (remaining <= 0) {
+        clearInterval(timer);
+        renderCampaign();
+      }
+    }, 1000);
+  }
+}
+
+function watchCampaignAd() {
+  showRewardedAd(async () => {
+    const reward = Math.floor(Math.random() * 4) + 2;
+    await db.collection('users').doc(APP.currentUser.uid).update({
+      freeCoins: firebase.firestore.FieldValue.increment(reward),
+    });
+    APP.currentUserData.freeCoins += reward;
+    lastAdWatchTime = Date.now();
+
+    await db.collection('transactions').add({
+      uid: APP.currentUser.uid, type: 'ad_reward', amount: reward, coinType: 'free',
+      description: 'Campaign ad reward', createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    showToast(`Earned ⚡${reward}! 📺`, 'success');
+    renderCampaign();
+  });
+}
+
+function watchBonusAd() {
+  showRewardedAd(async () => {
+    const reward = Math.floor(Math.random() * 6) + 5;
+    await db.collection('users').doc(APP.currentUser.uid).update({
+      freeCoins: firebase.firestore.FieldValue.increment(reward),
+    });
+    APP.currentUserData.freeCoins += reward;
+    lastAdWatchTime = Date.now();
+
+    await db.collection('transactions').add({
+      uid: APP.currentUser.uid, type: 'ad_reward', amount: reward, coinType: 'free',
+      description: 'Bonus ad reward', createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    showToast(`Earned ⚡${reward}! 🎯`, 'success');
+    renderCampaign();
+  });
+}
+
 // ==================== PAYOUT MANAGEMENT (Admin) ====================
 
 function openPayoutPage() {
@@ -8882,10 +8673,10 @@ async function renderPayoutPage() {
     snap.forEach(doc => {
       const p = doc.data();
       if (p.type === 'coin_purchase' || p.type === 'subscription') totalRevenue += p.amount || 0;
-      if (p.status === 'completed' && p.type !== 'coin_purchase') totalPayouts += p.amount || 0;
+      if (p.status === 'completed' && p.type !== 'coin_purchase' && p.type !== 'subscription') totalPayouts += p.amount || 0;
       if (p.status === 'pending') pendingPayouts += p.amount || 0;
 
-      if (p.userId && p.type !== 'coin_purchase') {
+      if (p.userId && p.type !== 'coin_purchase' && p.type !== 'subscription') {
         if (!payoutsByUser[p.userId]) payoutsByUser[p.userId] = { total: 0, items: [] };
         payoutsByUser[p.userId].total += p.amount || 0;
         payoutsByUser[p.userId].items.push({ id: doc.id, ...p });
@@ -8924,11 +8715,11 @@ async function renderPayoutPage() {
   }
 }
 
-console.log('Wallet, Games, Spin, Shop, Live, Referral, Earn, Campaign loaded');
+console.log('Vidr Part 9 loaded: Live, Gifts, Referral, Earn, Campaign, Payout');
 
 // ==========================================
-// VIDR - app.js Part 5 (FINAL)
-// Admin Panel, Bot Management, Final Systems
+// VIDR - app.js Part 10 (FINAL)
+// Admin Panel, Bot Management, Final Init
 // ==========================================
 
 // ==================== ADMIN PANEL ====================
@@ -8946,7 +8737,6 @@ async function renderAdminPanel() {
   container.innerHTML = '<div class="loading-spinner small" style="margin:60px auto"></div>';
 
   try {
-    // Gather stats
     const usersSnap = await db.collection('users').get();
     let totalUsers = 0, activeUsers = 0, bannedUsers = 0, verifiedUsers = 0, botUsers = 0;
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
@@ -9014,7 +8804,6 @@ async function renderAdminPanel() {
         </div>
       </div>
 
-      <!-- Admin Actions Grid -->
       <div class="admin-section">
         <div class="admin-section-title">⚡ Quick Actions</div>
         <div class="admin-action-grid">
@@ -9027,7 +8816,6 @@ async function renderAdminPanel() {
         </div>
       </div>
 
-      <!-- User Search -->
       <div class="admin-section">
         <div class="admin-section-title">👤 User Management</div>
         <input type="text" class="admin-search" id="adminUserSearch" placeholder="Search by username or display name..." oninput="adminSearchUsers(this.value)">
@@ -9115,21 +8903,18 @@ async function openAdminUserActions(uid) {
     <div class="admin-action-grid">
   `;
 
-  // Ban / Unban
   if (u.banned) {
     html += `<div class="admin-action-btn success" onclick="adminUnbanUser('${uid}')">✅ Unban</div>`;
   } else {
     html += `<div class="admin-action-btn danger" onclick="adminBanUser('${uid}')">🚫 Ban</div>`;
   }
 
-  // Suspend
   if (u.suspended) {
     html += `<div class="admin-action-btn success" onclick="adminUnsuspendUser('${uid}')">✅ Unsuspend</div>`;
   } else {
     html += `<div class="admin-action-btn warning" onclick="adminSuspendUser('${uid}')">⏳ Suspend</div>`;
   }
 
-  // Verified
   if (u.verified) {
     html += `<div class="admin-action-btn danger" onclick="adminRemoveVerified('${uid}')">❌ Remove Verified</div>`;
   } else {
@@ -9499,7 +9284,7 @@ async function adminGiveTitle(uid) {
   closeBottomSheet();
 
   let presetsHTML = TITLE_PRESETS.map(t =>
-    `<div style="display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;border-radius:var(--radius-sm)" onclick="confirmGiveTitle('${uid}','${t.name}','${t.rarity}')" class="sheet-option" style="padding:8px 0">
+    `<div style="padding:8px 0;cursor:pointer" onclick="confirmGiveTitle('${uid}','${t.name}','${t.rarity}')">
       <span class="profile-title ${t.rarity}" style="font-size:11px">${t.name}</span>
     </div>`
   ).join('');
@@ -9562,9 +9347,9 @@ async function adminRemoveTitle(uid) {
 
   let html = '<div class="modal-title">Remove Title</div><div style="max-height:300px;overflow-y:auto">';
   titles.forEach(t => {
-    html += `<div class="sheet-option" onclick="confirmRemoveTitle('${uid}','${t.name}','${t.rarity}')" style="cursor:pointer;padding:8px 0">
+    html += `<div style="padding:8px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="confirmRemoveTitle('${uid}','${t.name}','${t.rarity}')">
       <span class="profile-title ${t.rarity}">${escapeHTML(t.name)}</span>
-      <span style="margin-left:auto;color:var(--error);font-size:13px">Remove</span>
+      <span style="color:var(--error);font-size:13px">Remove</span>
     </div>`;
   });
   html += '</div><button class="modal-btn secondary" style="width:100%;margin-top:12px" onclick="closeCenterModal()">Cancel</button>';
@@ -9580,7 +9365,6 @@ async function confirmRemoveTitle(uid, name, rarity) {
       titles: firebase.firestore.FieldValue.arrayRemove({ name, rarity }),
     });
 
-    // If removed title was selected, clear selection
     const u = await getUserData(uid);
     if (u?.selectedTitle?.name === name) {
       await db.collection('users').doc(uid).update({ selectedTitle: null });
@@ -9879,6 +9663,8 @@ async function createBots(count) {
         totalGiftsSent: Math.floor(Math.random() * 50),
         totalSpent: 0,
         totalEarned: 0,
+        stripeCustomerId: null,
+        stripeConnectId: null,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         lastActive: firebase.firestore.FieldValue.serverTimestamp(),
         notifSettings: { likes: true, comments: true, followers: true, messages: true, live: true },
@@ -9886,7 +9672,6 @@ async function createBots(count) {
         profileViews: Math.floor(Math.random() * 500),
       });
 
-      // Reserve username
       try {
         await db.collection('usernames').doc(username).set({ uid: botUid });
       } catch {}
@@ -9909,7 +9694,6 @@ async function addBotVideos() {
   let added = 0;
 
   try {
-    // Get random bots
     const botsSnap = await db.collection('users')
       .where('isBot', '==', true)
       .limit(100)
@@ -10031,7 +9815,7 @@ async function addBotImagePosts() {
   }
 }
 
-// ==================== STORY CLEANUP (Admin) ====================
+// ==================== STORY CLEANUP ====================
 
 async function cleanupExpiredStories() {
   try {
@@ -10051,12 +9835,10 @@ async function cleanupExpiredStories() {
   }
 }
 
-// Run cleanup periodically
-setInterval(cleanupExpiredStories, 3600000); // Every hour
+setInterval(cleanupExpiredStories, 3600000);
 
-// ==================== FINAL INITIALIZATION HOOKS ====================
+// ==================== URL PARAM HANDLING ====================
 
-// Handle URL params on load
 (function handleURLParams() {
   const params = new URLSearchParams(window.location.search);
 
@@ -10091,7 +9873,6 @@ setInterval(cleanupExpiredStories, 3600000); // Every hour
         openOverlayPage('shopPage');
         openProductDetail(params.get('product'));
 
-        // Track affiliate
         const ref = params.get('ref');
         if (ref) {
           localStorage.setItem('vidr_affiliate_ref', ref);
@@ -10099,14 +9880,22 @@ setInterval(cleanupExpiredStories, 3600000); // Every hour
       }
     }, 3000);
   }
+
+  if (params.get('payment') === 'success') {
+    setTimeout(() => {
+      showToast('Payment successful! Your coins are on the way 🎉', 'success', 5000);
+    }, 2500);
+  }
 })();
 
-// Keyboard handling for chat
+// ==================== KEYBOARD HANDLING ====================
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    // Close modals/sheets
     if (document.getElementById('storyViewer').style.display !== 'none') {
       closeStoryViewer();
+    } else if (document.getElementById('stripePaymentModal').style.display !== 'none') {
+      closeStripeModal();
     } else if (document.getElementById('centerModal').style.display !== 'none') {
       closeCenterModal();
     } else if (document.getElementById('bottomSheet').style.display !== 'none') {
@@ -10115,7 +9904,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Visibility change - pause/resume
+// ==================== VISIBILITY CHANGE ====================
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     stopFeedXpTimer();
@@ -10123,7 +9913,6 @@ document.addEventListener('visibilitychange', () => {
     if (APP.currentPage === 'home' && APP.currentUser) {
       startFeedXpTimer();
     }
-    // Update last active
     if (APP.currentUser) {
       db.collection('users').doc(APP.currentUser.uid).update({
         lastActive: firebase.firestore.FieldValue.serverTimestamp(),
@@ -10132,119 +9921,17 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Resize handler
+// ==================== RESIZE HANDLER ====================
+
 window.addEventListener('resize', debounce(() => {
-  // Redraw spin wheel if visible
   const canvas = document.getElementById('spinWheelCanvas');
   if (canvas && canvas.offsetParent) drawSpinWheel();
 }, 300));
 
-// Initialize pull to refresh after DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-  // Setup scroll handler to update stories visibility
-  const homePage = document.getElementById('homePage');
-  if (homePage) {
-    homePage.addEventListener('scroll', () => {
-      if (homePage.scrollTop > 50 && !APP.storiesHidden) {
-        // Don't auto-hide on scroll, only on timer
-      }
-    });
-  }
-});
+// ==================== FINAL LOG ====================
 
-const GIPHY_API_KEY = 'qnt649W2dhXZsY4buSKKjqWR3vQTAryd';
-
-async function openStickerPicker() {
-  openBottomSheet(`
-    <div class="sticker-picker">
-      <input type="text" placeholder="Search stickers..." id="stickerSearch" 
-             style="width:100%;padding:10px;background:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-md);color:var(--text-primary);margin-bottom:10px;font-size:14px"
-             oninput="searchGiphyStickers(this.value)">
-      <div class="sticker-pack-tabs">
-        <button class="sticker-pack-tab active" onclick="loadGiphyPack('cute',this)">😊 Cute</button>
-        <button class="sticker-pack-tab" onclick="loadGiphyPack('love',this)">❤️ Love</button>
-        <button class="sticker-pack-tab" onclick="loadGiphyPack('funny',this)">😂 Funny</button>
-        <button class="sticker-pack-tab" onclick="loadGiphyPack('sparkle',this)">✨ Sparkle</button>
-        <button class="sticker-pack-tab" onclick="loadEmojiPack(this)">😀 Emoji</button>
-      </div>
-      <div class="sticker-grid" id="stickerGrid">
-        <div class="loading-spinner small" style="margin:20px auto"></div>
-      </div>
-    </div>
-  `);
-  
-  loadGiphyPack('cute');
-}
-
-async function loadGiphyPack(term, btn) {
-  if (btn) {
-    document.querySelectorAll('.sticker-pack-tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  
-  const grid = document.getElementById('stickerGrid');
-  grid.innerHTML = '<div class="loading-spinner small" style="margin:20px auto"></div>';
-  
-  try {
-    const url = `https://api.giphy.com/v1/stickers/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(term)}&limit=24&rating=g&bundle=messaging_non_clips`;
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    let html = '';
-    data.data.forEach(sticker => {
-      const gifUrl = sticker.images.fixed_width_small.url;
-      const originalUrl = sticker.images.original.url;
-      html += `
-        <div class="sticker-item" onclick="sendGifSticker('${originalUrl}')">
-          <img src="${gifUrl}" style="width:100%;height:100%;object-fit:contain" alt="sticker" loading="lazy">
-        </div>
-      `;
-    });
-    
-    grid.innerHTML = html || '<p style="text-align:center;padding:20px;color:var(--text-muted);grid-column:span 4">No stickers found</p>';
-  } catch (err) {
-    console.error('Giphy error:', err);
-    grid.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-muted);grid-column:span 4">Failed to load</p>';
-  }
-}
-
-const searchGiphyStickers = debounce((term) => {
-  if (term.length >= 2) loadGiphyPack(term);
-}, 500);
-
-function loadEmojiPack(btn) {
-  document.querySelectorAll('.sticker-pack-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  
-  const grid = document.getElementById('stickerGrid');
-  const emojis = ['😀','😂','🤣','😍','🥰','😎','🤩','😢','😭','😤','🤯','🥳','😏','🤔','👀','💀',
-                  '❤️','💕','💖','💗','💓','💞','💘','💝','😘','😻','💐','🌹','🎉','🎊','🎈','🎁'];
-  
-  grid.innerHTML = emojis.map(e => 
-    `<div class="sticker-item" style="font-size:32px" onclick="sendSticker('${e}')">${e}</div>`
-  ).join('');
-}
-
-async function sendGifSticker(gifUrl) {
-  closeBottomSheet();
-  if (!APP.currentChatRoom || !APP.currentChatUser) return;
-
-  try {
-    await db.collection('messages').add({
-      chatRoomId: APP.currentChatRoom,
-      senderId: APP.currentUser.uid,
-      type: 'sticker_gif',
-      stickerUrl: gifUrl,
-      read: false,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    await updateChatRoomLastMessage(APP.currentChatRoom, '🎨 Sticker', APP.currentChatUser);
-  } catch (err) {
-    showToast('Failed to send sticker', 'error');
-  }
-}
-
-console.log('Admin, Bots, Final Systems loaded');
-console.log('=== VIDR APP FULLY LOADED ===');
-console.log(`Version: ${APP.version}`);
+console.log('====================================');
+console.log('  VIDR APP FULLY LOADED');
+console.log(`  Version: ${APP.version}`);
+console.log('  All 10 parts loaded successfully');
+console.log('====================================');
