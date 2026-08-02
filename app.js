@@ -2677,24 +2677,22 @@ function renderTextMedia(post) {
   `;
 }
 
-// Adsterra config - Replace with your actual keys when ready
-const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e'; // Get from Adsterra Native Banner
-const ADSTERRA_NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js'; // e.g. '//pl27492847.profitableratecpm.com/YOUR_KEY/invoke.js'
-const USE_ADSTERRA = true; // Set to true when you have your real keys
+// ==================== AD SYSTEM ====================
+const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e'; // Leave empty to use beautiful placeholders
+const ADSTERRA_NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js'; // Leave empty to use beautiful placeholders
 
-// Beautiful placeholder ads (rotates through different styles)
 const PLACEHOLDER_ADS = [
   {
     icon: '🛍️',
     title: 'Shop the Latest Trends',
-    desc: 'Discover amazing products at unbeatable prices',
+    desc: 'Amazing products at unbeatable prices',
     cta: 'Shop Now',
     gradient: 'linear-gradient(135deg, #ff6bb5, #a78bfa)'
   },
   {
     icon: '🎮',
     title: 'Play Free Games',
-    desc: 'Thousands of fun games right in your browser',
+    desc: 'Thousands of fun games in your browser',
     cta: 'Play Free',
     gradient: 'linear-gradient(135deg, #7dd3fc, #a78bfa)'
   },
@@ -2715,7 +2713,7 @@ const PLACEHOLDER_ADS = [
   {
     icon: '✨',
     title: 'Premium Features Await',
-    desc: 'Unlock everything with our premium plan',
+    desc: 'Unlock everything with premium plan',
     cta: 'Try Free',
     gradient: 'linear-gradient(135deg, #fcd34d, #f59e0b)'
   },
@@ -2743,34 +2741,34 @@ const PLACEHOLDER_ADS = [
 ];
 
 function renderFeedAd(index) {
-  if (USE_ADSTERRA && ADSTERRA_NATIVE_KEY !== '33a09e788da26a493e7cb3d24079d49e') {
-    // Real Adsterra ad
+  // Use Adsterra if configured, otherwise beautiful placeholder
+  if (ADSTERRA_NATIVE_KEY && ADSTERRA_NATIVE_URL) {
     return `
       <div class="feed-ad" data-ad-index="${index}">
         <div class="feed-ad-label">Sponsored</div>
-        <div class="feed-ad-container" id="feedAd_${index}">
-          <div id="container-${ADSTERRA_NATIVE_KEY}-${index}" class="adsterra-native-container"></div>
-        </div>
-      </div>
-    `;
-  } else {
-    // Beautiful placeholder ad
-    const ad = PLACEHOLDER_ADS[index % PLACEHOLDER_ADS.length];
-    return `
-      <div class="feed-ad" data-ad-index="${index}">
-        <div class="feed-ad-label">Sponsored</div>
-        <div class="feed-ad-placeholder" style="background:${ad.gradient}" onclick="handlePlaceholderAdClick()">
-          <div class="feed-ad-icon">${ad.icon}</div>
-          <div class="feed-ad-title">${ad.title}</div>
-          <div class="feed-ad-desc">${ad.desc}</div>
-          <button class="feed-ad-cta">${ad.cta} →</button>
+        <div class="feed-ad-container">
+          <div id="container-${ADSTERRA_NATIVE_KEY}-${index}"></div>
         </div>
       </div>
     `;
   }
+  
+  // Beautiful placeholder ad
+  const ad = PLACEHOLDER_ADS[index % PLACEHOLDER_ADS.length];
+  return `
+    <div class="feed-ad" data-ad-index="${index}">
+      <div class="feed-ad-label">Sponsored</div>
+      <div class="feed-ad-placeholder" style="background:${ad.gradient}" onclick="handleAdClick(${index})">
+        <div class="feed-ad-icon">${ad.icon}</div>
+        <div class="feed-ad-title">${ad.title}</div>
+        <div class="feed-ad-desc">${ad.desc}</div>
+        <button class="feed-ad-cta">${ad.cta} →</button>
+      </div>
+    </div>
+  `;
 }
 
-function handlePlaceholderAdClick() {
+function handleAdClick(index) {
   APP.adImpressions++;
   showToast('Thanks for supporting Vidr! 💖', 'success');
 }
@@ -5072,15 +5070,31 @@ function changeAvatar() {
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+      return showToast('Image too large! Max 5MB', 'error');
+    }
+    
     showLoading();
     try {
       const compressed = await compressImage(file, 400, 0.85);
-      const path = `avatars/${APP.currentUser.uid}_${Date.now()}.jpg`;
+      const timestamp = Date.now();
+      const path = `avatars/${APP.currentUser.uid}_${timestamp}.jpg`;
       const ref = storage.ref(path);
+      
       await ref.put(compressed);
       const url = await ref.getDownloadURL();
 
-      await db.collection('users').doc(APP.currentUser.uid).update({ photoURL: url });
+      try {
+        await db.collection('users').doc(APP.currentUser.uid).update({ 
+          photoURL: url 
+        });
+      } catch (updateErr) {
+        await db.collection('users').doc(APP.currentUser.uid).set({ 
+          photoURL: url 
+        }, { merge: true });
+      }
+      
       await APP.currentUser.updateProfile({ photoURL: url });
 
       APP.currentUserData.photoURL = url;
@@ -5091,7 +5105,8 @@ function changeAvatar() {
       loadProfile(APP.currentUser.uid);
     } catch (err) {
       hideLoading();
-      showToast('Failed to update avatar', 'error');
+      console.error('Avatar upload error:', err);
+      showToast('Failed to update avatar: ' + err.message, 'error');
     }
   };
   input.click();
@@ -5104,23 +5119,56 @@ function changeCover() {
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return showToast('Image too large! Max 10MB', 'error');
+    }
+    
     showLoading();
     try {
+      console.log('Compressing image...');
       const compressed = await compressImage(file, 1200, 0.85);
-      const path = `covers/${APP.currentUser.uid}_${Date.now()}.jpg`;
+      
+      console.log('Uploading to Storage...');
+      const timestamp = Date.now();
+      const path = `covers/${APP.currentUser.uid}_${timestamp}.jpg`;
       const ref = storage.ref(path);
-      await ref.put(compressed);
+      
+      const uploadTask = await ref.put(compressed);
+      console.log('Upload complete, getting URL...');
+      
       const url = await ref.getDownloadURL();
+      console.log('Got URL:', url);
 
-      await db.collection('users').doc(APP.currentUser.uid).update({ coverURL: url });
+      // Try to update, if fails create the document
+      try {
+        await db.collection('users').doc(APP.currentUser.uid).update({ 
+          coverURL: url 
+        });
+      } catch (updateErr) {
+        console.log('Update failed, trying set with merge...');
+        await db.collection('users').doc(APP.currentUser.uid).set({ 
+          coverURL: url 
+        }, { merge: true });
+      }
+      
       APP.currentUserData.coverURL = url;
       clearUserCache(APP.currentUser.uid);
       hideLoading();
-      showToast('Cover updated!', 'success');
+      showToast('Cover updated! 🎨', 'success');
       loadProfile(APP.currentUser.uid);
     } catch (err) {
       hideLoading();
-      showToast('Failed to update cover', 'error');
+      console.error('Cover upload error:', err);
+      
+      if (err.code === 'storage/unauthorized') {
+        showToast('Storage permission denied. Check Storage rules.', 'error');
+      } else if (err.code === 'storage/canceled') {
+        showToast('Upload canceled', 'warning');
+      } else {
+        showToast('Failed to update cover: ' + err.message, 'error');
+      }
     }
   };
   input.click();
