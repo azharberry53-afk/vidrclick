@@ -4553,18 +4553,7 @@ async function loadProfile(uid, asOverlay = false) {
         mutualHTML = `<div class="mutual-badge">👥 ${mutualCount} mutual friends</div>`;
       }
     }
-
-   // FIND this section in loadProfile:
-let quickBtns = '';
-if (isOwn) {
-  quickBtns = `
-    <div class="profile-quick-btns">
-      ...
-    </div>
-  `;
-}
-
-// REPLACE WITH:
+    
 let quickBtns = '';
 if (isOwn) {
   quickBtns = `
