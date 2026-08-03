@@ -446,6 +446,7 @@
 <div id="authContainer" class="auth-container" style="display:none">
 
 <!-- LOGIN PAGE -->
+<!-- LOGIN PAGE -->
 <div id="loginPage" class="auth-page">
   <div class="auth-content">
     <div class="auth-logo">
@@ -456,10 +457,12 @@
     
     <div class="auth-form">
       <div class="input-group">
-        <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+        <label class="input-label">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email">
       </div>
       <div class="input-group">
-        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+        <label class="input-label">Password</label>
+        <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
       </div>
       <button class="auth-btn primary" onclick="loginWithEmail()">Log In</button>
       
@@ -476,6 +479,7 @@
 </div>
 
 <!-- REGISTER PAGE -->
+<!-- REGISTER PAGE -->
 <div id="registerPage" class="auth-page" style="display:none">
   <div class="auth-content">
     <div class="auth-logo">
@@ -486,17 +490,22 @@
     
     <div class="auth-form">
       <div class="input-group">
-        <input type="text" id="regDisplayName" placeholder="Display Name" autocomplete="name">
+        <label class="input-label">Display Name</label>
+        <input type="text" id="regDisplayName" placeholder="e.g. Azhar Berry" autocomplete="name">
       </div>
       <div class="input-group">
-        <input type="text" id="regUsername" placeholder="Username" autocomplete="username" oninput="checkUsername(this.value)">
+        <label class="input-label">Username</label>
+        <input type="text" id="regUsername" placeholder="e.g. azharberry" autocomplete="username" oninput="checkUsername(this.value)">
         <span class="username-status" id="usernameStatus"></span>
+        <small class="input-hint">Only letters, numbers, . and _ (no @ or spaces)</small>
       </div>
       <div class="input-group">
-        <input type="email" id="regEmail" placeholder="Email" autocomplete="email">
+        <label class="input-label">Email</label>
+        <input type="email" id="regEmail" placeholder="e.g. you@email.com" autocomplete="email">
       </div>
       <div class="input-group">
-        <input type="password" id="regPassword" placeholder="Password (6+ characters)" autocomplete="new-password">
+        <label class="input-label">Password</label>
+        <input type="password" id="regPassword" placeholder="6+ characters" autocomplete="new-password">
       </div>
       <button class="auth-btn primary" onclick="registerWithEmail()">Sign Up</button>
       
