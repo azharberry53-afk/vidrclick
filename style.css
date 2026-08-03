@@ -6489,6 +6489,31 @@ input[type="file"] {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Auth form labels */
+.input-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  padding-left: 4px;
+  text-align: left;
+}
+
+.input-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding-left: 4px;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.input-group {
+  text-align: left;
+}
+
 /* Print hide */
 @media print {
   .bottom-nav,
