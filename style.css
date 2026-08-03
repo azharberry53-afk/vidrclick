@@ -6514,6 +6514,22 @@ input[type="file"] {
   text-align: left;
 }
 
+.profile-page {
+    position: absolute; /* Ensures it starts from top */
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100vh;
+    z-index: 10;
+    background: var(--bg-primary);
+    overflow-y: auto;
+}
+
+#profileContent {
+    width: 100%;
+    display: block;
+}
+
 /* Print hide */
 @media print {
   .bottom-nav,
