@@ -877,6 +877,9 @@ async function createUserDocument(user, displayName, username) {
   const now = firebase.firestore.FieldValue.serverTimestamp();
   const referrer = localStorage.getItem('vidr_referrer');
 
+  // Determine role - use ADMIN_EMAIL check
+  const isAdminUser = user.email === ADMIN_EMAIL;
+
   const userData = {
     uid: user.uid,
     email: user.email,
@@ -895,9 +898,9 @@ async function createUserDocument(user, displayName, username) {
     likesCount: 0,
     postsCount: 0,
     totalViews: 0,
-    verified: false,
+    verified: isAdminUser, // Auto-verify admin
     verifiedUntil: null,
-    role: user.email === ADMIN_EMAIL ? 'admin' : 'user',
+    role: isAdminUser ? 'admin' : 'user',
     titles: [{ name: 'Newbie', rarity: 'common' }],
     selectedTitle: { name: 'Newbie', rarity: 'common' },
     achievements: {},
@@ -935,20 +938,31 @@ async function createUserDocument(user, displayName, username) {
     profileViews: 0,
   };
 
-  await db.collection('users').doc(user.uid).set(userData);
-  await db.collection('usernames').doc(username).set({ uid: user.uid });
+  try {
+    // Use set with merge to avoid conflicts
+    await db.collection('users').doc(user.uid).set(userData, { merge: true });
+    console.log('✅ User document created');
+    
+    // Reserve username
+    await db.collection('usernames').doc(username).set({ uid: user.uid });
+    console.log('✅ Username reserved');
+  } catch (err) {
+    console.error('Error creating user document:', err);
+    throw err;
+  }
 
+  // Process referral (non-blocking)
   if (referrer && referrer !== user.uid) {
-    await processReferral(referrer, user.uid);
+    processReferral(referrer, user.uid).catch(err => console.warn('Referral error:', err));
     localStorage.removeItem('vidr_referrer');
   }
 
-  await addNotification(user.uid, {
+  // Welcome notification (non-blocking)
+  addNotification(user.uid, {
     type: 'system',
     text: `Welcome to Vidr! Here's ${WELCOME_BONUS} free coins to get started! 🎉`,
     icon: '🎁',
-    createdAt: now,
-  });
+  }).catch(err => console.warn('Notification error:', err));
 }
 
 async function processReferral(referrerId, newUserId) {
@@ -1028,10 +1042,26 @@ function updateStoryAvatar() {
 }
 
 async function onUserAuthenticated() {
-  await db.collection('users').doc(APP.currentUser.uid).update({
-    lastActive: firebase.firestore.FieldValue.serverTimestamp(),
-    lastLoginDate: new Date().toISOString().split('T')[0],
-  });
+  try {
+    // Try to update, but don't fail if document doesn't exist
+    const userRef = db.collection('users').doc(APP.currentUser.uid);
+    const doc = await userRef.get();
+    
+    if (doc.exists) {
+      await userRef.update({
+        lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+        lastLoginDate: new Date().toISOString().split('T')[0],
+      });
+    } else {
+      console.warn('User document does not exist, creating one...');
+      // Create it if missing
+      const username = generateUsername(APP.currentUser.displayName || APP.currentUser.email.split('@')[0]);
+      await createUserDocument(APP.currentUser, APP.currentUser.displayName || 'User', username);
+      await loadUserData();
+    }
+  } catch (err) {
+    console.error('onUserAuthenticated error:', err);
+  }
 
   loadFeed();
   loadStories();
