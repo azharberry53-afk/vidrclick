@@ -17,6 +17,7 @@ const APP = {
   feedLoading: false,
   feedEnded: false,
   followingFeedPosts: [],
+  followingIds: new Set(),
   followingLastDoc: null,
   followingEnded: false,
   discoverUsers: [],
@@ -878,8 +879,8 @@ async function createUserDocument(user, displayName, username) {
   const now = firebase.firestore.FieldValue.serverTimestamp();
   const referrer = localStorage.getItem('vidr_referrer');
 
-  // Determine role - use ADMIN_EMAIL check
-  const isAdminUser = user.email === ADMIN_EMAIL;
+  // STRICT CHECK: Only this specific email gets admin role
+  const isAdminUser = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   const userData = {
     uid: user.uid,
@@ -899,71 +900,28 @@ async function createUserDocument(user, displayName, username) {
     likesCount: 0,
     postsCount: 0,
     totalViews: 0,
-    verified: isAdminUser, // Auto-verify admin
+    verified: isAdminUser, 
     verifiedUntil: null,
-    role: isAdminUser ? 'admin' : 'user',
+    role: isAdminUser ? 'admin' : 'user', // Defaults to 'user' for everyone else
     titles: [{ name: 'Newbie', rarity: 'common' }],
     selectedTitle: { name: 'Newbie', rarity: 'common' },
     achievements: {},
     selectedAchievements: [],
     banned: false,
-    banReason: '',
     suspended: false,
-    suspendedUntil: null,
     isPrivate: false,
     isBot: false,
     dailyStreak: 0,
-    lastDailyReward: null,
-    lastLoginDate: null,
-    freeBoostsUsed: 0,
-    freeBoostsResetMonth: new Date().getMonth(),
-    referredBy: referrer || null,
-    referralCount: 0,
-    referralEarnings: 0,
-    totalGiftsReceived: 0,
-    totalGiftsSent: 0,
-    totalSpent: 0,
-    totalEarned: 0,
-    stripeCustomerId: null,
-    stripeConnectId: null,
-    createdAt: now,
     lastActive: now,
-    notifSettings: {
-      likes: true,
-      comments: true,
-      followers: true,
-      messages: true,
-      live: true,
-    },
-    blockedUsers: [],
-    profileViews: 0,
+    createdAt: now
   };
 
-  try {
-    // Use set with merge to avoid conflicts
-    await db.collection('users').doc(user.uid).set(userData, { merge: true });
-    console.log('✅ User document created');
-    
-    // Reserve username
-    await db.collection('usernames').doc(username).set({ uid: user.uid });
-    console.log('✅ Username reserved');
-  } catch (err) {
-    console.error('Error creating user document:', err);
-    throw err;
-  }
-
-  // Process referral (non-blocking)
+  await db.collection('users').doc(user.uid).set(userData);
+  await db.collection('usernames').doc(username).set({ uid: user.uid });
+  
   if (referrer && referrer !== user.uid) {
-    processReferral(referrer, user.uid).catch(err => console.warn('Referral error:', err));
-    localStorage.removeItem('vidr_referrer');
+    processReferral(referrer, user.uid);
   }
-
-  // Welcome notification (non-blocking)
-  addNotification(user.uid, {
-    type: 'system',
-    text: `Welcome to Vidr! Here's ${WELCOME_BONUS} free coins to get started! 🎉`,
-    icon: '🎁',
-  }).catch(err => console.warn('Notification error:', err));
 }
 
 async function processReferral(referrerId, newUserId) {
@@ -1043,6 +1001,14 @@ function updateStoryAvatar() {
 }
 
 async function onUserAuthenticated() {
+  // Fetch following list to fix feed button state
+  const followSnap = await db.collection('follows')
+    .where('followerId', '==', APP.currentUser.uid)
+    .get();
+  
+  APP.followingIds = new Set();
+  followSnap.forEach(doc => APP.followingIds.add(doc.data().followingId));
+  
   try {
     // Try to update, but don't fail if document doesn't exist
     const userRef = db.collection('users').doc(APP.currentUser.uid);
@@ -2549,6 +2515,9 @@ function renderFeedItem(post) {
   const isAdmin = user.role === 'admin';
   const showGlow = isVerified || isAdmin;
   const isOwn = post.uid === APP.currentUser?.uid;
+  // Inside renderFeedItem(post)
+const followingClass = APP.followingIds.has(post.uid) ? 'following' : '';
+const followingText = APP.followingIds.has(post.uid) ? 'Following' : 'Follow';
 
   let mediaHTML = '';
 
@@ -2595,11 +2564,11 @@ function renderFeedItem(post) {
           </div>
           <span class="feed-time">${timeAgo(post.createdAt)}</span>
         </div>
-        ${!isOwn ? `
-          <button class="feed-follow-btn" id="followBtn_${post.id}" onclick="event.stopPropagation();toggleFeedFollow('${post.uid}','${post.id}')">
-            Follow
-          </button>
-        ` : ''}
+       ${!isOwn ? `
+  <button class="feed-follow-btn ${followingClass}" id="followBtn_${post.id}" onclick="event.stopPropagation();toggleFeedFollow('${post.uid}','${post.id}')">
+    ${followingText}
+  </button>
+` : ''}
         <button class="feed-more-btn" onclick="event.stopPropagation();openPostOptions('${post.id}','${post.uid}')">⋯</button>
       </div>
 
