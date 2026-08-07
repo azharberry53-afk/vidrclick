@@ -63,7 +63,7 @@ const ADMIN_EMAIL = 'azharberry53@gmail.com';
 const MAX_LEVEL = 10000;
 const XP_PER_LEVEL_BASE = 100;
 const FEED_PAGE_SIZE = 10;
-const AD_INTERVAL_POSTS = 4;
+const AD_INTERVAL_POSTS = 5;
 const AD_INTERSTITIAL_INTERVAL = 300000;
 const BANNER_REFRESH_INTERVAL = 60000;
 const STORY_DURATION = 5000;
@@ -106,8 +106,8 @@ function getFirebaseFunctions() {
 }
 
 // ==================== ADSTERRA CONFIG ====================
-const ADSTERRA_NATIVE_KEY = '';
-const ADSTERRA_NATIVE_URL = '';
+const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e';
+const ADSTERRA_NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js';
 
 const PLACEHOLDER_ADS = [
   { icon: '🛍️', title: 'Shop the Latest Trends', desc: 'Amazing products at unbeatable prices', cta: 'Shop Now', gradient: 'linear-gradient(135deg, #ff6bb5, #a78bfa)' },
@@ -1691,10 +1691,18 @@ function loadAdsterraBanner() {
   const bannerContent = document.getElementById('bannerAdContent');
   if (!bannerContent) return;
   
+  // REPLACE 'YOUR_468x60_KEY' with your actual key
   bannerContent.innerHTML = `
-    <div style="width:320px;height:50px;background:var(--bg-tertiary);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted)">
-      Advertisement
-    </div>
+    <script type="text/javascript">
+      atOptions = {
+        'key' : 'd5b030ab7dc6f25911930cebe81375a3',
+        'format' : 'iframe',
+        'height' : 60,
+        'width' : 468,
+        'params' : {}
+      };
+    </script>
+    <script src="https://hystericallikingdowntown.com/d5b030ab7dc6f25911930cebe81375a3/invoke.js"></script>
   `;
 
   APP.adImpressions++;
@@ -1715,14 +1723,14 @@ function showInterstitialAd() {
 }
 
 function showRewardedAd(callback) {
+  // REPLACE 'YOUR_NATIVE_KEY' with your Native Banner key
+  const NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e';
+  const NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js';
+  
   openCenterModal(`
-    <div class="modal-title">📺 Watch Ad</div>
-    <div id="rewardedAdContainer" style="min-height:200px;display:flex;align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0;padding:20px">
-      <div style="text-align:center;color:var(--text-muted);font-size:13px">
-        <div style="font-size:48px;margin-bottom:12px">📺</div>
-        Ad Playing...<br><br>
-        <div class="loading-spinner small" style="margin:0 auto"></div>
-      </div>
+    <div class="modal-title">📺 Watch Ad to Earn</div>
+    <div id="rewardedAdContainer" style="min-height:250px;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0;padding:12px;overflow:hidden">
+      <div id="container-${NATIVE_KEY}"></div>
     </div>
     <p class="modal-text" id="rewardedAdCountdown">Please wait <span id="adTimer">15</span> seconds...</p>
     <div class="modal-actions">
@@ -1730,6 +1738,18 @@ function showRewardedAd(callback) {
       <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.5">Claim Reward</button>
     </div>
   `);
+
+  // Load Adsterra Native Banner
+  setTimeout(() => {
+    const container = document.getElementById('rewardedAdContainer');
+    if (container) {
+      const script = document.createElement('script');
+      script.async = true;
+      script.setAttribute('data-cfasync', 'false');
+      script.src = NATIVE_URL;
+      container.appendChild(script);
+    }
+  }, 100);
 
   window._rewardedAdCallback = callback;
 
@@ -2757,17 +2777,30 @@ function renderTextMedia(post) {
 function renderFeedAd(index) {
   // Use Adsterra if configured
   if (ADSTERRA_NATIVE_KEY && ADSTERRA_NATIVE_URL) {
+    // Inject script after rendering
+    setTimeout(() => {
+      const container = document.getElementById(`feedAdContainer_${index}`);
+      if (container && !container.dataset.loaded) {
+        container.dataset.loaded = 'true';
+        const script = document.createElement('script');
+        script.async = true;
+        script.setAttribute('data-cfasync', 'false');
+        script.src = ADSTERRA_NATIVE_URL;
+        container.appendChild(script);
+      }
+    }, 100);
+    
     return `
       <div class="feed-ad" data-ad-index="${index}">
         <div class="feed-ad-label">Sponsored</div>
-        <div class="feed-ad-container">
-          <div id="container-${ADSTERRA_NATIVE_KEY}-${index}"></div>
+        <div class="feed-ad-container" id="feedAdContainer_${index}">
+          <div id="container-${ADSTERRA_NATIVE_KEY}"></div>
         </div>
       </div>
     `;
   }
   
-  // Beautiful placeholder ad
+  // Fallback: Beautiful placeholder ad
   const ad = PLACEHOLDER_ADS[index % PLACEHOLDER_ADS.length];
   return `
     <div class="feed-ad" data-ad-index="${index}">
