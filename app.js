@@ -741,8 +741,15 @@ function openOverlayPage(pageId) {
   const topHeader = document.getElementById('topHeader');
   const storiesBar = document.getElementById('storiesBar');
 
-  if (bottomNav) bottomNav.style.display = 'none';
-  if (bannerAd) bannerAd.style.display = 'none';
+  // KEEP bottom nav visible for profile overlay
+  if (pageId === 'profilePage') {
+    if (bottomNav) bottomNav.style.display = 'flex';
+    if (bannerAd) bannerAd.style.display = 'flex';
+  } else {
+    if (bottomNav) bottomNav.style.display = 'none';
+    if (bannerAd) bannerAd.style.display = 'none';
+  }
+  
   if (topHeader) topHeader.style.display = 'none';
   if (storiesBar) storiesBar.classList.add('hidden');
 }
@@ -754,6 +761,12 @@ function closeOverlayPage(pageId) {
     setTimeout(() => {
       page.style.display = 'none';
     }, 300);
+  }
+
+  // Special handling for profile overlay
+  if (pageId === 'profilePage') {
+    removeProfileBackButton();
+    APP.profileViewingId = APP.currentUser?.uid;
   }
 
   const bottomNav = document.getElementById('bottomNav');
@@ -1723,33 +1736,35 @@ function showInterstitialAd() {
 }
 
 function showRewardedAd(callback) {
-  // REPLACE 'YOUR_NATIVE_KEY' with your Native Banner key
-  const NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e';
-  const NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js';
+  const useAdsterra = ADSTERRA_NATIVE_KEY && ADSTERRA_NATIVE_URL;
   
   openCenterModal(`
     <div class="modal-title">📺 Watch Ad to Earn</div>
-    <div id="rewardedAdContainer" style="min-height:250px;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0;padding:12px;overflow:hidden">
-      <div id="container-${NATIVE_KEY}"></div>
+    <div id="rewardedAdContainer" style="min-height:280px;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0;padding:12px;overflow:hidden;display:flex;align-items:center;justify-content:center">
+      ${useAdsterra ? '' : `
+        <div style="text-align:center;color:var(--text-muted);font-size:13px">
+          <div style="font-size:48px;margin-bottom:12px">📺</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:8px">Video Advertisement</div>
+          <div style="font-size:12px">Enjoy this brief message from our sponsor</div>
+          <div style="margin-top:16px">
+            <div class="loading-spinner small" style="margin:0 auto"></div>
+          </div>
+        </div>
+      `}
     </div>
-    <p class="modal-text" id="rewardedAdCountdown">Please wait <span id="adTimer">15</span> seconds...</p>
+    <p class="modal-text" id="rewardedAdCountdown">⏱️ Please wait <span id="adTimer">15</span> seconds...</p>
     <div class="modal-actions">
       <button class="modal-btn secondary" onclick="cancelRewardedAd()">Cancel</button>
-      <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.5">Claim Reward</button>
+      <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.5;cursor:not-allowed">Claim Reward</button>
     </div>
   `);
 
-  // Load Adsterra Native Banner
-  setTimeout(() => {
-    const container = document.getElementById('rewardedAdContainer');
-    if (container) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.setAttribute('data-cfasync', 'false');
-      script.src = NATIVE_URL;
-      container.appendChild(script);
-    }
-  }, 100);
+  // Load Adsterra ad in iframe (if configured)
+  if (useAdsterra) {
+    setTimeout(() => {
+      loadRewardedAdIframe();
+    }, 100);
+  }
 
   window._rewardedAdCallback = callback;
 
@@ -1780,6 +1795,56 @@ function showRewardedAd(callback) {
       }
     }
   }, 1000);
+}
+
+function loadRewardedAdIframe() {
+  const container = document.getElementById('rewardedAdContainer');
+  if (!container) return;
+  
+  try {
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '280px';
+    iframe.style.border = 'none';
+    iframe.style.display = 'block';
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('frameborder', '0');
+    
+    const iframeContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
+          #ad-wrap { width: 100%; min-height: 250px; display: flex; align-items: center; justify-content: center; }
+        </style>
+      </head>
+      <body>
+        <div id="ad-wrap">
+          <script type="text/javascript">
+            atOptions = {
+              'key' : '${ADSTERRA_NATIVE_KEY}',
+              'format' : 'iframe',
+              'height' : 250,
+              'width' : 300,
+              'params' : {}
+            };
+          </script>
+          <script type="text/javascript" src="${ADSTERRA_NATIVE_URL}"></script>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    container.innerHTML = '';
+    container.appendChild(iframe);
+    
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(iframeContent);
+    iframe.contentWindow.document.close();
+  } catch (err) {
+    console.warn('Rewarded ad load error:', err);
+  }
 }
 
 function cancelRewardedAd() {
@@ -4755,12 +4820,18 @@ console.log('Vidr Part 5 loaded: Stories, Discover, Search, Notifications');
 async function loadProfile(uid, asOverlay = false) {
   if (!uid) return;
 
-  // Fix half-view bug by scrolling to top
   const page = document.getElementById('profilePage');
   if (page) page.scrollTop = 0;
 
+  // If viewing another user's profile, show as overlay with back button
   if (asOverlay && uid !== APP.currentUser?.uid) {
     openOverlayPage('profilePage');
+    
+    // Add back button header
+    ensureProfileBackButton();
+  } else {
+    // Own profile - hide back button
+    removeProfileBackButton();
   }
 
   const container = document.getElementById('profileContent');
@@ -4769,6 +4840,9 @@ async function loadProfile(uid, asOverlay = false) {
   container.innerHTML = '<div class="loading-spinner small" style="margin:60px auto"></div>';
 
   try {
+  // Update back button title
+const titleEl = document.getElementById('profileBackTitle');
+if (titleEl) titleEl.textContent = userData.displayName || 'Profile';
     const userData = await getUserData(uid);
     if (!userData) {
       container.innerHTML = '<div class="empty-state"><h3>User not found</h3></div>';
@@ -6131,6 +6205,43 @@ async function clearAppCache() {
   }
   Object.keys(userDataCache).forEach(key => delete userDataCache[key]);
   showToast('Cache cleared', 'success');
+}
+
+// Add back button to profile page when viewing others
+function ensureProfileBackButton() {
+  const profilePage = document.getElementById('profilePage');
+  if (!profilePage) return;
+  
+  // Check if back header already exists
+  if (document.getElementById('profileBackHeader')) return;
+  
+  const backHeader = document.createElement('div');
+  backHeader.id = 'profileBackHeader';
+  backHeader.className = 'profile-back-header';
+  backHeader.innerHTML = `
+    <button class="back-btn" onclick="closeProfileOverlay()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5m7-7-7 7 7 7"/>
+      </svg>
+    </button>
+    <div class="profile-back-title" id="profileBackTitle"></div>
+    <div style="width:36px"></div>
+  `;
+  
+  profilePage.insertBefore(backHeader, profilePage.firstChild);
+}
+
+function removeProfileBackButton() {
+  const backHeader = document.getElementById('profileBackHeader');
+  if (backHeader) backHeader.remove();
+}
+
+function closeProfileOverlay() {
+  removeProfileBackButton();
+  closeOverlayPage('profilePage');
+  
+  // Reset profile viewing to own profile
+  APP.profileViewingId = APP.currentUser?.uid;
 }
 
 console.log('Vidr Part 6 loaded: Profile, Edit Profile, Chat, Settings');
