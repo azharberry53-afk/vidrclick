@@ -2777,24 +2777,18 @@ function renderTextMedia(post) {
 function renderFeedAd(index) {
   // Use Adsterra if configured
   if (ADSTERRA_NATIVE_KEY && ADSTERRA_NATIVE_URL) {
-    // Inject script after rendering
+    const uniqueId = `feedAd_${index}_${Date.now()}`;
+    
+    // Load ad after a small delay
     setTimeout(() => {
-      const container = document.getElementById(`feedAdContainer_${index}`);
-      if (container && !container.dataset.loaded) {
-        container.dataset.loaded = 'true';
-        const script = document.createElement('script');
-        script.async = true;
-        script.setAttribute('data-cfasync', 'false');
-        script.src = ADSTERRA_NATIVE_URL;
-        container.appendChild(script);
-      }
-    }, 100);
+      loadFeedAdScript(uniqueId, index);
+    }, 200 + (index * 100)); // Stagger ad loads
     
     return `
       <div class="feed-ad" data-ad-index="${index}">
         <div class="feed-ad-label">Sponsored</div>
-        <div class="feed-ad-container" id="feedAdContainer_${index}">
-          <div id="container-${ADSTERRA_NATIVE_KEY}"></div>
+        <div class="feed-ad-container" id="${uniqueId}">
+          <div class="feed-ad-loading">📺 Loading ad...</div>
         </div>
       </div>
     `;
@@ -2813,6 +2807,72 @@ function renderFeedAd(index) {
       </div>
     </div>
   `;
+}
+
+// New function to load ads separately
+function loadFeedAdScript(containerId, index) {
+  const container = document.getElementById(containerId);
+  if (!container || container.dataset.loaded === 'true') return;
+  container.dataset.loaded = 'true';
+
+  try {
+    // Create iframe to isolate each ad (fixes the "only first ad loads" issue)
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '280px';
+    iframe.style.border = 'none';
+    iframe.style.display = 'block';
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('frameborder', '0');
+    
+    // Write ad code inside iframe
+    const iframeContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
+          #ad-wrap { width: 100%; min-height: 250px; display: flex; align-items: center; justify-content: center; }
+        </style>
+      </head>
+      <body>
+        <div id="ad-wrap">
+          <script type="text/javascript">
+            atOptions = {
+              'key' : '${ADSTERRA_NATIVE_KEY}',
+              'format' : 'iframe',
+              'height' : 250,
+              'width' : 300,
+              'params' : {}
+            };
+          </script>
+          <script type="text/javascript" src="${ADSTERRA_NATIVE_URL}"></script>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    container.innerHTML = '';
+    container.appendChild(iframe);
+    
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(iframeContent);
+    iframe.contentWindow.document.close();
+    
+    APP.adImpressions++;
+  } catch (err) {
+    console.warn('Feed ad load error:', err);
+    // Fallback to placeholder if iframe fails
+    const ad = PLACEHOLDER_ADS[index % PLACEHOLDER_ADS.length];
+    container.innerHTML = `
+      <div class="feed-ad-placeholder" style="background:${ad.gradient}" onclick="handleAdClick(${index})">
+        <div class="feed-ad-icon">${ad.icon}</div>
+        <div class="feed-ad-title">${ad.title}</div>
+        <div class="feed-ad-desc">${ad.desc}</div>
+        <button class="feed-ad-cta">${ad.cta} →</button>
+      </div>
+    `;
+  }
 }
 
 function handleAdClick(index) {
