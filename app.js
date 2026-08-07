@@ -2312,12 +2312,31 @@ async function loadFeed(refresh = false) {
       .orderBy('createdAt', 'desc')
       .limit(FEED_PAGE_SIZE);
 
+      try {
+    // 1. Fetch Active Live Streams first
+    const liveSnap = await db.collection('liveStreams')
+      .where('isActive', '==', true)
+      .limit(5)
+      .get();
+      
+    const liveItems = [];
+    liveSnap.forEach(doc => {
+      const data = doc.data();
+      liveItems.push({
+        id: doc.id,
+        ...data,
+        type: 'live_preview', // Custom type
+        uid: data.hostUid,
+        createdAt: data.createdAt
+      });
+    });
+        
     if (APP.feedLastDoc) {
       query = query.startAfter(APP.feedLastDoc);
     }
 
     const snapshot = await query.get();
-
+             
     if (snapshot.empty) {
       APP.feedEnded = true;
       feedLoading.style.display = 'none';
@@ -2510,6 +2529,24 @@ function renderEmptyFollowingFeed() {
 }
 
 function renderFeedItem(post) {
+  if (post.type === 'live_preview') {
+     return `
+      <div class="feed-item live-feed-item" onclick="joinLiveStream('${post.uid}')">
+        <div class="feed-item-header">
+           <img class="feed-avatar avatar-live" src="${post.hostAvatar}">
+           <div class="feed-user-info">
+              <span class="feed-displayname">${post.hostName} is LIVE</span>
+              <span class="feed-time">Tap to join</span>
+           </div>
+        </div>
+        <div class="feed-media">
+           <div class="live-placeholder" style="background:#000; height:400px; display:flex; align-items:center; justify-content:center; color:#white;">
+              <h2 class="live-indicator">WATCH LIVE</h2>
+           </div>
+        </div>
+      </div>
+     `;
+  }
   const user = post.userData || {};
   const isVerified = user.verified;
   const isAdmin = user.role === 'admin';
@@ -2829,23 +2866,23 @@ function setupCarousels() {
     let isDragging = false;
     const track = carousel.querySelector('.feed-carousel-track');
     const total = parseInt(carousel.dataset.total);
-    let current = 0;
+    let current = parseInt(track.dataset.current || 0);
 
-    carousel.addEventListener('touchstart', (e) => {
-      startX = e.touches[0].clientX;
+    const start = (e) => {
+      startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
       isDragging = true;
       track.style.transition = 'none';
-    }, { passive: true });
+    };
 
-    carousel.addEventListener('touchmove', (e) => {
+    const move = (e) => {
       if (!isDragging) return;
-      currentX = e.touches[0].clientX;
+      currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
       const diff = currentX - startX;
       const offset = -(current * 100 / total) + (diff / carousel.offsetWidth * 100 / total);
       track.style.transform = `translateX(${offset}%)`;
-    }, { passive: true });
+    };
 
-    carousel.addEventListener('touchend', () => {
+    const end = () => {
       if (!isDragging) return;
       isDragging = false;
       track.style.transition = 'transform 0.35s ease';
@@ -2862,7 +2899,17 @@ function setupCarousels() {
       carousel.querySelectorAll('.carousel-dot').forEach((dot, i) => {
         dot.classList.toggle('active', i === current);
       });
-    });
+    };
+
+    // Touch events
+    carousel.addEventListener('touchstart', start, { passive: true });
+    carousel.addEventListener('touchmove', move, { passive: true });
+    carousel.addEventListener('touchend', end);
+    
+    // Mouse events for PC
+    carousel.addEventListener('mousedown', start);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
   });
 }
 
@@ -4613,7 +4660,11 @@ async function loadProfile(uid, asOverlay = false) {
 
   const container = document.getElementById('profileContent');
   container.innerHTML = '<div class="loading-spinner small" style="margin:60px auto"></div>';
-
+  
+ // Fix the "half-view" bug by forcing scroll to top
+  const page = document.getElementById('profilePage');
+  if(page) page.scrollTop = 0;
+  
   try {
     const userData = await getUserData(uid);
     if (!userData) {
@@ -8277,44 +8328,59 @@ function simulateBotViewers(liveId) {
 function renderLiveStreamHost(liveId, title) {
   stopCameraPreview();
   const container = document.getElementById('liveStreamContent');
+  
+  // Set body to full screen mode
+  document.body.classList.add('live-fullscreen');
+  document.getElementById('bottomNav').style.display = 'none';
+  document.getElementById('bannerAd').style.display = 'none';
 
   container.innerHTML = `
-    <div class="live-stream-container">
-      <div class="live-video-area">
-        <video id="liveHostVideo" autoplay playsinline muted></video>
-        <div id="liveGiftOverlay" class="live-gift-overlay"></div>
-
-        <div class="live-top-bar">
-          <div class="live-host-info">
-            <img class="live-host-avatar" src="${APP.currentUserData?.photoURL || 'default-avatar.png'}" onerror="this.src='default-avatar.png'">
-            <div>
-              <div class="live-host-name">${escapeHTML(APP.currentUserData?.displayName || '')}</div>
-              <div class="live-viewer-count" id="liveViewerCount">👁 1</div>
+    <div class="live-fullscreen-container">
+      <!-- Full-screen video background -->
+      <video id="liveHostVideo" class="live-fullscreen-video" autoplay playsinline muted></video>
+      
+      <!-- Gift Animation Overlay -->
+      <div id="liveGiftAnimations" class="live-gift-animations"></div>
+      
+      <!-- Top Bar -->
+      <div class="live-top-overlay">
+        <div class="live-host-badge">
+          <img src="${APP.currentUserData?.photoURL || 'default-avatar.png'}" class="live-host-avatar-small">
+          <div class="live-host-details">
+            <div class="live-host-name-small">${escapeHTML(APP.currentUserData?.displayName || '')}</div>
+            <div class="live-viewer-count-small" id="liveViewerCount" onclick="showLiveViewers()" style="cursor:pointer">
+              👁 <span id="viewerCountNum">1</span>
             </div>
           </div>
-          <div class="live-indicator">● LIVE</div>
-          <button class="live-close-btn" onclick="endLiveStream()">✕</button>
         </div>
-
-        <div id="liveBattleArea"></div>
-        <div class="live-comments" id="liveComments"></div>
-
-        <div class="live-bottom-bar">
-          <input class="live-comment-input" id="liveCommentInput" placeholder="Say something..." onkeypress="if(event.key==='Enter')sendLiveComment()">
-          <button class="live-action-btn" onclick="switchLiveCamera()">🔄</button>
-          <button class="live-action-btn" onclick="toggleLiveMic()">🎤</button>
-          <button class="live-action-btn" onclick="openLiveFilters()">✨</button>
-          <button class="live-action-btn" onclick="openLiveBattle()">⚔️</button>
-          <button class="live-action-btn" onclick="shareLiveStream()">📤</button>
+        <div class="live-indicator-badge">
+          <span class="live-dot"></span> LIVE
         </div>
+        <button class="live-close-btn-new" onclick="endLiveStream()">✕</button>
+      </div>
+      
+      <!-- Battle Area -->
+      <div id="liveBattleArea"></div>
+      
+      <!-- Comments at Bottom -->
+      <div class="live-comments-bottom" id="liveComments"></div>
+      
+      <!-- Bottom Controls -->
+      <div class="live-bottom-controls">
+        <input class="live-comment-input-new" id="liveCommentInput" placeholder="Say something..." onkeypress="if(event.key==='Enter')sendLiveComment()">
+        <button class="live-control-btn" onclick="switchLiveCamera()" title="Switch Camera">🔄</button>
+        <button class="live-control-btn" onclick="toggleLiveMic()" title="Toggle Mic">🎤</button>
+        <button class="live-control-btn" onclick="openLiveFilters()" title="Filters">✨</button>
+        <button class="live-control-btn" onclick="shareLiveStreamToChat()" title="Share">📤</button>
       </div>
     </div>
   `;
 
   startLiveCamera();
   listenToLiveStream(liveId);
+  trackLiveViewer(liveId, true);
 }
-
+  
 async function startLiveCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -8376,52 +8442,308 @@ function applyLiveFilter(filter) {
 }
 
 function listenToLiveStream(liveId) {
-  const unsub = db.collection('liveStreams').doc(liveId).onSnapshot(snap => {
+  // Listen to main stream doc
+  const unsub1 = db.collection('liveStreams').doc(liveId).onSnapshot(snap => {
     if (!snap.exists) return;
     const data = snap.data();
 
-    const viewerEl = document.getElementById('liveViewerCount');
-    if (viewerEl) viewerEl.textContent = `👁 ${data.viewerCount || 0}`;
+    const viewerEl = document.getElementById('viewerCountNum');
+    if (viewerEl) viewerEl.textContent = data.viewerCount || 0;
 
     renderLiveComments(data.comments || []);
 
     if (data.battleActive) renderLiveBattle(data);
+    
+    // If host ended stream
+    if (!data.isActive && !APP.isLiveHost) {
+      showToast('Live stream has ended', 'info');
+      setTimeout(() => leaveLiveStream(), 2000);
+    }
   });
-  APP.listeners.push(unsub);
+  
+  // Listen to gift events for animations
+  const unsub2 = db.collection('liveStreams').doc(liveId)
+    .collection('giftEvents')
+    .orderBy('createdAt', 'desc')
+    .limit(1)
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const gift = change.doc.data();
+          const giftTime = gift.createdAt?.toDate?.() || new Date();
+          
+          // Only animate gifts from last 10 seconds (avoid old ones on refresh)
+          if (Date.now() - giftTime.getTime() < 10000) {
+            triggerGiftAnimation(gift);
+          }
+        }
+      });
+    });
+    
+  APP.listeners.push(unsub1, unsub2);
 }
 
 function renderLiveComments(comments) {
   const container = document.getElementById('liveComments');
   if (!container) return;
-  container.innerHTML = comments.slice(-30).map(c => `
-    <div class="live-comment ${c.isGift ? 'live-comment-gift' : ''}">
-      <span class="live-comment-user">${escapeHTML(c.username || 'User')} ${c.verified ? '✓' : ''}</span>
-      <span class="live-comment-text">${escapeHTML(c.text)}</span>
-    </div>
-  `).join('');
+  
+  container.innerHTML = comments.slice(-30).map(c => {
+    if (c.isGift) {
+      // Special gift comment style
+      return `
+        <div class="live-comment live-gift-comment">
+          <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')">
+          <div class="live-comment-content">
+            <span class="live-comment-username" onclick="viewLiveCommenter('${c.uid}')">${escapeHTML(c.username)} ${c.verified ? '✓' : ''}</span>
+            <span class="live-comment-gift-text">sent ${c.giftEmoji} ${c.giftName} x${c.giftCount || 1}</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    return `
+      <div class="live-comment">
+        <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')">
+        <div class="live-comment-content">
+          <span class="live-comment-username" onclick="viewLiveCommenter('${c.uid}')">${escapeHTML(c.username)} ${c.verified ? '✓' : ''}</span>
+          <span class="live-comment-text">${escapeHTML(c.text)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
   container.scrollTop = container.scrollHeight;
 }
 
-async function sendLiveComment() {
-  const input = document.getElementById('liveCommentInput');
-  const text = input?.value?.trim();
-  if (!text || !APP.liveStreamId) return;
-  input.value = '';
-
-  try {
-    await db.collection('liveStreams').doc(APP.liveStreamId).update({
-      comments: firebase.firestore.FieldValue.arrayUnion({
-        uid: APP.currentUser.uid,
-        username: APP.currentUserData.displayName,
-        verified: APP.currentUserData.verified || false,
-        text,
-        isGift: false,
-        time: Date.now(),
-      }),
-    });
-  } catch {}
+function renderLiveComments(comments) {
+  const container = document.getElementById('liveComments');
+  if (!container) return;
+  
+  container.innerHTML = comments.slice(-30).map(c => {
+    if (c.isGift) {
+      // Special gift comment style
+      return `
+        <div class="live-comment live-gift-comment">
+          <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')">
+          <div class="live-comment-content">
+            <span class="live-comment-username" onclick="viewLiveCommenter('${c.uid}')">${escapeHTML(c.username)} ${c.verified ? '✓' : ''}</span>
+            <span class="live-comment-gift-text">sent ${c.giftEmoji} ${c.giftName} x${c.giftCount || 1}</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    return `
+      <div class="live-comment">
+        <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')">
+        <div class="live-comment-content">
+          <span class="live-comment-username" onclick="viewLiveCommenter('${c.uid}')">${escapeHTML(c.username)} ${c.verified ? '✓' : ''}</span>
+          <span class="live-comment-text">${escapeHTML(c.text)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.scrollTop = container.scrollHeight;
 }
 
+// ==================== GIFT ANIMATIONS ====================
+
+let giftAnimationQueue = [];
+let isProcessingGiftQueue = false;
+
+function triggerGiftAnimation(gift) {
+  giftAnimationQueue.push(gift);
+  if (!isProcessingGiftQueue) {
+    processGiftQueue();
+  }
+}
+
+async function processGiftQueue() {
+  if (giftAnimationQueue.length === 0) {
+    isProcessingGiftQueue = false;
+    return;
+  }
+  
+  isProcessingGiftQueue = true;
+  const gift = giftAnimationQueue.shift();
+  
+  // Show gift banner
+  showGiftBanner(gift);
+  
+  // Show gift animation based on tier
+  if (gift.giftTier === 'legendary') {
+    showLegendaryGiftAnimation(gift);
+    await new Promise(r => setTimeout(r, 4000));
+  } else if (gift.giftTier === 'epic') {
+    showEpicGiftAnimation(gift);
+    await new Promise(r => setTimeout(r, 3000));
+  } else if (gift.giftTier === 'rare') {
+    showRareGiftAnimation(gift);
+    await new Promise(r => setTimeout(r, 2000));
+  } else {
+    showBasicGiftAnimation(gift);
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  
+  processGiftQueue();
+}
+
+// Gift banner (shows sender + gift info on left side)
+function showGiftBanner(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  const banner = document.createElement('div');
+  banner.className = 'gift-banner';
+  banner.innerHTML = `
+    <div class="gift-banner-content">
+      <img src="${gift.avatar || 'default-avatar.png'}" class="gift-banner-avatar">
+      <div class="gift-banner-info">
+        <div class="gift-banner-name">${escapeHTML(gift.username)}</div>
+        <div class="gift-banner-action">sent ${escapeHTML(gift.giftName)}</div>
+      </div>
+      <div class="gift-banner-emoji">${gift.giftEmoji}</div>
+      <div class="gift-banner-count">x${gift.giftCount}</div>
+    </div>
+  `;
+  
+  container.appendChild(banner);
+  
+  // Animate in
+  requestAnimationFrame(() => {
+    banner.classList.add('show');
+  });
+  
+  // Remove after 4 seconds
+  setTimeout(() => {
+    banner.classList.add('hide');
+    setTimeout(() => banner.remove(), 500);
+  }, 4000);
+}
+
+// Basic gift (small, floats up)
+function showBasicGiftAnimation(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  for (let i = 0; i < Math.min(gift.giftCount, 5); i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'floating-gift';
+      el.textContent = gift.giftEmoji;
+      el.style.left = (30 + Math.random() * 40) + '%';
+      el.style.bottom = '20%';
+      container.appendChild(el);
+      
+      setTimeout(() => el.remove(), 2500);
+    }, i * 200);
+  }
+}
+
+// Rare gift (medium, with sparkles)
+function showRareGiftAnimation(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  // Big center emoji
+  const centerEl = document.createElement('div');
+  centerEl.className = 'gift-center-medium';
+  centerEl.innerHTML = `
+    <div class="gift-center-emoji">${gift.giftEmoji}</div>
+    ${gift.giftCount > 1 ? `<div class="gift-combo">x${gift.giftCount}</div>` : ''}
+  `;
+  container.appendChild(centerEl);
+  
+  // Add sparkles
+  for (let i = 0; i < 12; i++) {
+    setTimeout(() => {
+      const sparkle = document.createElement('div');
+      sparkle.className = 'gift-sparkle';
+      sparkle.textContent = '✨';
+      sparkle.style.left = (40 + Math.random() * 20) + '%';
+      sparkle.style.top = (30 + Math.random() * 40) + '%';
+      container.appendChild(sparkle);
+      setTimeout(() => sparkle.remove(), 1500);
+    }, i * 100);
+  }
+  
+  setTimeout(() => centerEl.remove(), 2500);
+}
+
+// Epic gift (large, with fireworks)
+function showEpicGiftAnimation(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  // Full screen effect wrapper
+  const wrap = document.createElement('div');
+  wrap.className = 'gift-epic-wrap';
+  wrap.innerHTML = `
+    <div class="gift-epic-bg"></div>
+    <div class="gift-epic-center">
+      <div class="gift-epic-emoji">${gift.giftEmoji}</div>
+      <div class="gift-epic-name">${escapeHTML(gift.giftName)}</div>
+      ${gift.giftCount > 1 ? `<div class="gift-combo-epic">x${gift.giftCount}</div>` : ''}
+    </div>
+  `;
+  container.appendChild(wrap);
+  
+  // Firework particles
+  for (let i = 0; i < 30; i++) {
+    setTimeout(() => {
+      const particle = document.createElement('div');
+      particle.className = 'gift-firework';
+      const angle = (Math.PI * 2 * i) / 30;
+      const distance = 150 + Math.random() * 100;
+      particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+      particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+      particle.textContent = ['✨', '⭐', '💫', '🌟'][Math.floor(Math.random() * 4)];
+      wrap.appendChild(particle);
+    }, 500);
+  }
+  
+  setTimeout(() => wrap.remove(), 3500);
+}
+
+// Legendary gift (full screen takeover with confetti)
+function showLegendaryGiftAnimation(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  const wrap = document.createElement('div');
+  wrap.className = 'gift-legendary-wrap';
+  wrap.innerHTML = `
+    <div class="gift-legendary-bg"></div>
+    <div class="gift-legendary-rays"></div>
+    <div class="gift-legendary-center">
+      <div class="gift-legendary-emoji">${gift.giftEmoji}</div>
+      <div class="gift-legendary-name">${escapeHTML(gift.giftName)}</div>
+      <div class="gift-legendary-sender">from ${escapeHTML(gift.username)}</div>
+      ${gift.giftCount > 1 ? `<div class="gift-combo-legendary">x${gift.giftCount}</div>` : ''}
+    </div>
+  `;
+  container.appendChild(wrap);
+  
+  // Launch confetti
+  launchConfetti();
+  
+  // Floating emojis
+  for (let i = 0; i < 20; i++) {
+    setTimeout(() => {
+      const emoji = document.createElement('div');
+      emoji.className = 'floating-gift-large';
+      emoji.textContent = gift.giftEmoji;
+      emoji.style.left = Math.random() * 100 + '%';
+      emoji.style.bottom = '-50px';
+      emoji.style.animationDuration = (2 + Math.random() * 2) + 's';
+      wrap.appendChild(emoji);
+    }, i * 150);
+  }
+  
+  setTimeout(() => wrap.remove(), 4500);
+}
+  
 // ==================== GIFT PANEL ====================
 
 function openLiveGiftPanel(liveId, hostUid) {
@@ -8486,12 +8808,14 @@ async function sendLiveGift(liveId, hostUid) {
   closeBottomSheet();
 
   try {
+    // Deduct coins from sender
     await db.collection('users').doc(APP.currentUser.uid).update({
       [coinField]: firebase.firestore.FieldValue.increment(-cost),
       totalGiftsSent: firebase.firestore.FieldValue.increment(1),
     });
     APP.currentUserData[coinField] -= cost;
 
+    // Payout to host
     if (type === 'paid') {
       const hostAmount = Math.floor(cost * (1 - PLATFORM_FEE));
       await db.collection('users').doc(hostUid).update({
@@ -8512,22 +8836,62 @@ async function sendLiveGift(liveId, hostUid) {
       });
     }
 
+    // Get gift definition
     const allGifts = [...FREE_GIFTS, ...PAID_GIFTS];
     const giftDef = allGifts.find(g => g.id === id);
 
+    // Check for combo (same user sending same gift within 5 seconds)
+    const now = Date.now();
+    const comboKey = `${APP.currentUser.uid}_${id}`;
+    window._giftCombos = window._giftCombos || {};
+    
+    let comboCount = 1;
+    if (window._giftCombos[comboKey] && (now - window._giftCombos[comboKey].time) < 5000) {
+      comboCount = window._giftCombos[comboKey].count + 1;
+    }
+    window._giftCombos[comboKey] = { count: comboCount, time: now };
+
+    // Determine gift tier for animation
+    let tier = 'basic';
+    if (cost >= 5000) tier = 'legendary';
+    else if (cost >= 1000) tier = 'epic';
+    else if (cost >= 100) tier = 'rare';
+    else if (cost >= 20) tier = 'uncommon';
+
+    // Send gift event to live stream
     await db.collection('liveStreams').doc(liveId).update({
       comments: firebase.firestore.FieldValue.arrayUnion({
         uid: APP.currentUser.uid,
         username: APP.currentUserData.displayName,
+        avatar: APP.currentUserData.photoURL || '',
         verified: APP.currentUserData.verified || false,
         text: `sent ${giftDef?.emoji || '🎁'} ${giftDef?.name || 'Gift'}`,
         isGift: true,
-        time: Date.now(),
+        giftEmoji: giftDef?.emoji || '🎁',
+        giftName: giftDef?.name || 'Gift',
+        giftCount: comboCount,
+        giftTier: tier,
+        giftCost: cost,
+        giftType: type,
+        time: now,
       }),
     });
 
-    showGiftOverlay(giftDef?.emoji || '🎁');
+    // Add to gift animation queue
+    await db.collection('liveStreams').doc(liveId)
+      .collection('giftEvents').add({
+        uid: APP.currentUser.uid,
+        username: APP.currentUserData.displayName,
+        avatar: APP.currentUserData.photoURL || '',
+        giftEmoji: giftDef?.emoji || '🎁',
+        giftName: giftDef?.name || 'Gift',
+        giftCount: comboCount,
+        giftTier: tier,
+        giftCost: cost,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
 
+    // Battle score update
     const liveDoc = await db.collection('liveStreams').doc(liveId).get();
     if (liveDoc.exists && liveDoc.data().battleActive) {
       await db.collection('liveStreams').doc(liveId).update({
@@ -8538,14 +8902,18 @@ async function sendLiveGift(liveId, hostUid) {
     await incrementAchievement(APP.currentUser.uid, 'first_gift');
 
     await db.collection('transactions').add({
-      uid: APP.currentUser.uid, type: 'gift_sent', amount: -cost, coinType: type === 'free' ? 'free' : 'gold',
-      description: `Gift: ${giftDef?.name}`, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      uid: APP.currentUser.uid, type: 'gift_sent', amount: -cost, 
+      coinType: type === 'free' ? 'free' : 'gold',
+      description: `Gift: ${giftDef?.name}`, 
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
     selectedGift = null;
   } catch (err) {
+    console.error('Send gift error:', err);
     showToast('Failed to send gift', 'error');
   }
+}
 }
 
 function showGiftOverlay(emoji) {
@@ -8588,6 +8956,10 @@ async function confirmEndLive() {
 
 async function joinLiveStream(hostUid) {
   openOverlayPage('liveStreamPage');
+  document.body.classList.add('live-fullscreen');
+  document.getElementById('bottomNav').style.display = 'none';
+  document.getElementById('bannerAd').style.display = 'none';
+  
   const container = document.getElementById('liveStreamContent');
   container.innerHTML = '<div class="loading-spinner" style="margin:40vh auto"></div>';
 
@@ -8599,7 +8971,7 @@ async function joinLiveStream(hostUid) {
       .get();
 
     if (snap.empty) {
-      container.innerHTML = '<div class="empty-state" style="padding-top:40vh"><h3>Live has ended</h3></div>';
+      container.innerHTML = '<div class="empty-state" style="padding-top:40vh;color:#fff"><h3>Live has ended</h3></div>';
       return;
     }
 
@@ -8608,47 +8980,57 @@ async function joinLiveStream(hostUid) {
     APP.liveStreamId = liveDoc.id;
     APP.isLiveHost = false;
 
-    await db.collection('liveStreams').doc(liveDoc.id).update({
-      viewerCount: firebase.firestore.FieldValue.increment(1),
-    });
+    // Track this viewer
+    await trackLiveViewer(liveDoc.id, false);
 
     container.innerHTML = `
-      <div class="live-stream-container">
-        <div class="live-video-area" style="background:linear-gradient(135deg,#1a1a35,#0a0a1a);display:flex;align-items:center;justify-content:center">
-          <div style="text-align:center;color:var(--text-tertiary)">
-            <img src="${liveData.hostAvatar || 'default-avatar.png'}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px" onerror="this.src='default-avatar.png'">
-            <div style="font-size:18px;font-weight:700;color:#fff">${escapeHTML(liveData.hostName)}</div>
-            <div style="font-size:13px;margin-top:4px">Live Stream</div>
+      <div class="live-fullscreen-container">
+        <!-- Viewer sees the same video that host is streaming -->
+        <video id="liveViewerVideo" class="live-fullscreen-video" autoplay playsinline></video>
+        
+        <!-- Fallback background if video not available -->
+        <div class="live-viewer-bg" style="background:linear-gradient(135deg,#1a1a2e,#16213e);">
+          <div class="live-host-info-center">
+            <img src="${liveData.hostAvatar || 'default-avatar.png'}" class="live-host-avatar-large">
+            <div class="live-host-name-large">${escapeHTML(liveData.hostName)}</div>
+            <div class="live-host-title">${escapeHTML(liveData.title || 'Live Stream')}</div>
           </div>
+        </div>
 
-          <div id="liveGiftOverlay" class="live-gift-overlay"></div>
+        <!-- Gift Animation Overlay -->
+        <div id="liveGiftAnimations" class="live-gift-animations"></div>
 
-          <div class="live-top-bar">
-            <div class="live-host-info">
-              <img class="live-host-avatar" src="${liveData.hostAvatar || 'default-avatar.png'}" onerror="this.src='default-avatar.png'">
-              <div>
-                <div class="live-host-name">${escapeHTML(liveData.hostName)} ${liveData.hostVerified ? '✓' : ''}</div>
-                <div class="live-viewer-count" id="liveViewerCount">👁 ${liveData.viewerCount || 0}</div>
-              </div>
+        <!-- Top Bar -->
+        <div class="live-top-overlay">
+          <div class="live-host-badge" onclick="closeOverlayPage('liveStreamPage');viewProfile('${hostUid}')" style="cursor:pointer">
+            <img src="${liveData.hostAvatar || 'default-avatar.png'}" class="live-host-avatar-small">
+            <div class="live-host-details">
+              <div class="live-host-name-small">${escapeHTML(liveData.hostName)} ${liveData.hostVerified ? '✓' : ''}</div>
+              <div class="live-viewer-count-small">👁 <span id="viewerCountNum">${liveData.viewerCount || 0}</span></div>
             </div>
-            <div class="live-indicator">● LIVE</div>
-            <button class="live-close-btn" onclick="leaveLiveStream()">✕</button>
           </div>
+          <button class="live-follow-quick" onclick="quickFollowHost('${hostUid}', this)">Follow</button>
+          <button class="live-close-btn-new" onclick="leaveLiveStream()">✕</button>
+        </div>
 
-          <div id="liveBattleArea"></div>
-          <div class="live-comments" id="liveComments"></div>
+        <div id="liveBattleArea"></div>
+        
+        <!-- Comments at Bottom -->
+        <div class="live-comments-bottom" id="liveComments"></div>
 
-          <div class="live-bottom-bar">
-            <input class="live-comment-input" id="liveCommentInput" placeholder="Say something..." onkeypress="if(event.key==='Enter')sendLiveComment()">
-            <button class="live-action-btn" onclick="openLiveGiftPanel('${liveDoc.id}','${hostUid}')">🎁</button>
-            <button class="live-action-btn" onclick="shareLiveStream()">📤</button>
-          </div>
+        <!-- Bottom Controls -->
+        <div class="live-bottom-controls">
+          <input class="live-comment-input-new" id="liveCommentInput" placeholder="Say something..." onkeypress="if(event.key==='Enter')sendLiveComment()">
+          <button class="live-control-btn gift-btn" onclick="openLiveGiftPanel('${liveDoc.id}','${hostUid}')" title="Send Gift">🎁</button>
+          <button class="live-control-btn" onclick="shareLiveStreamToChat()" title="Share">📤</button>
         </div>
       </div>
     `;
 
     listenToLiveStream(liveDoc.id);
+    setupLiveVideoStream(hostUid);
   } catch (err) {
+    console.error('Join live error:', err);
     container.innerHTML = '<div class="empty-state"><h3>Failed to join</h3></div>';
   }
 }
@@ -8672,6 +9054,257 @@ function shareLiveStream() {
   } else {
     navigator.clipboard.writeText(link).then(() => showToast('Link copied!', 'success'));
   }
+}
+
+  async function trackLiveViewer(liveId, isHost) {
+  if (!APP.currentUser) return;
+  
+  try {
+    const viewerRef = db.collection('liveStreams').doc(liveId)
+      .collection('viewers').doc(APP.currentUser.uid);
+    
+    await viewerRef.set({
+      uid: APP.currentUser.uid,
+      displayName: APP.currentUserData.displayName,
+      photoURL: APP.currentUserData.photoURL || '',
+      verified: APP.currentUserData.verified || false,
+      isHost: isHost,
+      joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    if (!isHost) {
+      await db.collection('liveStreams').doc(liveId).update({
+        viewerCount: firebase.firestore.FieldValue.increment(1),
+      });
+    }
+  } catch (err) {
+    console.error('Track viewer error:', err);
+  }
+}
+
+async function removeLiveViewer(liveId) {
+  if (!APP.currentUser) return;
+  
+  try {
+    await db.collection('liveStreams').doc(liveId)
+      .collection('viewers').doc(APP.currentUser.uid).delete();
+    
+    await db.collection('liveStreams').doc(liveId).update({
+      viewerCount: firebase.firestore.FieldValue.increment(-1),
+    });
+  } catch (err) {
+    console.error('Remove viewer error:', err);
+  }
+}
+
+// Show live viewers list (for host)
+async function showLiveViewers() {
+  if (!APP.liveStreamId) return;
+  
+  openBottomSheet(`
+    <h3 class="sheet-title">👁 Viewers</h3>
+    <div id="liveViewersList">
+      <div class="loading-spinner small" style="margin:20px auto"></div>
+    </div>
+  `);
+  
+  try {
+    const snap = await db.collection('liveStreams').doc(APP.liveStreamId)
+      .collection('viewers').orderBy('joinedAt', 'desc').limit(100).get();
+    
+    let html = '';
+    snap.forEach(doc => {
+      const v = doc.data();
+      if (v.isHost) return; // Don't show host
+      
+      html += `
+        <div class="viewer-list-item" onclick="closeBottomSheet();viewProfile('${v.uid}')">
+          <img src="${v.photoURL || 'default-avatar.png'}" alt="" onerror="this.src='default-avatar.png'">
+          <div class="viewer-info">
+            <div class="viewer-name">${escapeHTML(v.displayName)} ${v.verified ? getVerifiedBadge() : ''}</div>
+            <div class="viewer-time">Joined ${timeAgo(v.joinedAt)}</div>
+          </div>
+        </div>
+      `;
+    });
+    
+    document.getElementById('liveViewersList').innerHTML = html || '<p style="text-align:center;color:var(--text-muted);padding:20px">No viewers yet</p>';
+  } catch (err) {
+    document.getElementById('liveViewersList').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
+  }
+}
+
+// Quick follow from live stream
+async function quickFollowHost(hostUid, btn) {
+  if (APP.followingIds.has(hostUid)) {
+    await unfollowUser(hostUid);
+    APP.followingIds.delete(hostUid);
+    btn.textContent = 'Follow';
+    btn.classList.remove('following');
+  } else {
+    await followUser(hostUid);
+    APP.followingIds.add(hostUid);
+    btn.textContent = 'Following';
+    btn.classList.add('following');
+  }
+}
+
+// Setup viewer to see host's stream (WebRTC placeholder - for actual streaming you need WebRTC/HLS)
+function setupLiveVideoStream(hostUid) {
+  // In production, connect via WebRTC/Agora/LiveKit here
+  // For now, viewers see the placeholder background
+  const video = document.getElementById('liveViewerVideo');
+  if (video) video.style.display = 'none'; // Hide until stream is available
+}
+
+// Leave live stream (updated)
+async function leaveLiveStream() {
+  if (APP.liveStreamId && !APP.isLiveHost) {
+    await removeLiveViewer(APP.liveStreamId);
+  }
+  
+  document.body.classList.remove('live-fullscreen');
+  document.getElementById('bottomNav').style.display = 'flex';
+  document.getElementById('bannerAd').style.display = 'flex';
+  APP.liveStreamId = null;
+  closeOverlayPage('liveStreamPage');
+}
+
+// Confirm End Live (updated)
+async function confirmEndLive() {
+  closeCenterModal();
+  try {
+    await db.collection('liveStreams').doc(APP.liveStreamId).update({ isActive: false });
+    const video = document.getElementById('liveHostVideo');
+    if (video && video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+    
+    document.body.classList.remove('live-fullscreen');
+    document.getElementById('bottomNav').style.display = 'flex';
+    document.getElementById('bannerAd').style.display = 'flex';
+    
+    APP.liveStreamId = null;
+    APP.isLiveHost = false;
+    closeOverlayPage('liveStreamPage');
+    showToast('Live stream ended', 'info');
+  } catch (err) {
+    showToast('Failed to end live', 'error');
+  }
+}
+
+// Share Live to Chat (for all users)
+function shareLiveStreamToChat() {
+  if (!APP.liveStreamId) return;
+  
+  openBottomSheet(`
+    <h3 class="sheet-title">📤 Share Live Stream</h3>
+    <div class="sheet-option" onclick="shareLiveViaLink()">
+      <div class="sheet-option-icon">🔗</div>
+      <div class="sheet-option-text"><div class="sheet-option-label">Copy Link</div></div>
+    </div>
+    <div class="sheet-option" onclick="shareLiveToDM()">
+      <div class="sheet-option-icon">✉️</div>
+      <div class="sheet-option-text"><div class="sheet-option-label">Send to Chat</div></div>
+    </div>
+    <div class="sheet-option" onclick="shareLiveNative()">
+      <div class="sheet-option-icon">📱</div>
+      <div class="sheet-option-text"><div class="sheet-option-label">Share via System</div></div>
+    </div>
+  `);
+}
+
+function shareLiveViaLink() {
+  const link = `https://vidr.click/?live=${APP.liveStreamId}`;
+  navigator.clipboard.writeText(link).then(() => {
+    showToast('Link copied! 🔗', 'success');
+    closeBottomSheet();
+  });
+}
+
+async function shareLiveNative() {
+  const link = `https://vidr.click/?live=${APP.liveStreamId}`;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Join my live on Vidr!', url: link });
+      closeBottomSheet();
+    } catch {}
+  } else {
+    shareLiveViaLink();
+  }
+}
+
+function shareLiveToDM() {
+  closeBottomSheet();
+  const liveId = APP.liveStreamId;
+  openBottomSheet(`
+    <h3 class="sheet-title">Send Live to...</h3>
+    <div style="padding:8px 0">
+      <input type="text" id="liveShareSearch" placeholder="Search username..." 
+        style="width:100%;padding:10px 14px;background:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-full);font-size:14px;color:var(--text-primary)"
+        oninput="searchUserForLiveShare(this.value, '${liveId}')">
+    </div>
+    <div id="liveShareResults"></div>
+  `);
+}
+
+async function searchUserForLiveShare(query, liveId) {
+  if (!query || query.length < 2) {
+    document.getElementById('liveShareResults').innerHTML = '';
+    return;
+  }
+  
+  try {
+    const lowerQuery = query.toLowerCase();
+    const snap = await db.collection('users').limit(20).get();
+    let html = '';
+    
+    snap.forEach(doc => {
+      const user = doc.data();
+      if (user.uid === APP.currentUser?.uid) return;
+      const match = (user.displayName || '').toLowerCase().includes(lowerQuery) ||
+                    (user.username || '').toLowerCase().includes(lowerQuery);
+      if (!match) return;
+      
+      html += `
+        <div class="search-user-item" onclick="sendLiveToChat('${user.uid}', '${liveId}')">
+          <img src="${user.photoURL || 'default-avatar.png'}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+          <div class="search-user-info">
+            <div class="search-user-name">${escapeHTML(user.displayName)}</div>
+            <div class="search-user-handle">@${escapeHTML(user.username || '')}</div>
+          </div>
+        </div>
+      `;
+    });
+    
+    document.getElementById('liveShareResults').innerHTML = html || '<p style="text-align:center;padding:16px;color:var(--text-muted)">No users found</p>';
+  } catch (err) {
+    document.getElementById('liveShareResults').innerHTML = '<p style="text-align:center;padding:16px;color:var(--text-muted)">Search failed</p>';
+  }
+}
+
+async function sendLiveToChat(uid, liveId) {
+  closeBottomSheet();
+  const chatRoomId = await getOrCreateChatRoom(uid);
+  
+  await db.collection('messages').add({
+    chatRoomId,
+    senderId: APP.currentUser.uid,
+    type: 'live_share',
+    liveId,
+    text: '🔴 Shared a live stream',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  
+  await updateChatRoomLastMessage(chatRoomId, '🔴 Live stream', uid);
+  showToast('Live shared!', 'success');
+}
+
+// Click on username in live comments to view profile
+function viewLiveCommenter(uid) {
+  const wasHost = APP.isLiveHost;
+  const liveId = APP.liveStreamId;
+  
+  // Don't leave the live, just show profile
+  loadProfile(uid, true);
 }
 
 // ==================== LIVE BATTLE ====================
