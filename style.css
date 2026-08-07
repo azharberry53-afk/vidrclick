@@ -6868,6 +6868,13 @@ body.live-fullscreen #storiesBar {
   color: var(--text-tertiary);
 }
 
+.feed-ad-loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* Print hide */
 @media print {
   .bottom-nav,
