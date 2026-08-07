@@ -6875,6 +6875,71 @@ body.live-fullscreen #storiesBar {
   font-size: 13px;
 }
 
+/* Profile Back Header (for viewing other users) */
+.profile-back-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  backdrop-filter: blur(20px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  border-bottom: 1px solid var(--border-light);
+  min-height: 56px;
+}
+
+.profile-back-header .back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.profile-back-header .back-btn:hover {
+  background: var(--bg-tertiary);
+  transform: translateX(-2px);
+}
+
+.profile-back-header .back-btn svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-primary);
+}
+
+.profile-back-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 12px;
+}
+
+/* Ensure profile overlay has proper spacing when back button is shown */
+#profilePage.active #profileBackHeader + #profileContent {
+  padding-top: 0;
+}
+
+/* Fix profile page scrolling with back button */
+#profilePage.active {
+  padding-bottom: calc(var(--nav-height) + var(--banner-height) + env(safe-area-inset-bottom, 0px));
+}
+
 /* Print hide */
 @media print {
   .bottom-nav,
