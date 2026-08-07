@@ -1,6 +1,6 @@
 // ==========================================
-// VIDR - Complete Application (with Stripe)
-// app.js - Part 1: Core Setup
+// VIDR - Complete Application (FINAL)
+// app.js - Part 1: Constants & Config
 // ==========================================
 
 'use strict';
@@ -17,9 +17,9 @@ const APP = {
   feedLoading: false,
   feedEnded: false,
   followingFeedPosts: [],
-  followingIds: new Set(),
   followingLastDoc: null,
   followingEnded: false,
+  followingIds: new Set(),
   discoverUsers: [],
   discoverLastDoc: null,
   chatRooms: [],
@@ -51,7 +51,7 @@ const APP = {
   interstitialTimer: null,
   lastInterstitialTime: 0,
   adImpressions: 0,
-  darkMode: localStorage.getItem('vidr_dark_mode') !== 'false',
+  darkMode: localStorage.getItem('vidr_dark_mode') === 'true',
   reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   isMobile: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
   listeners: [],
@@ -63,7 +63,7 @@ const ADMIN_EMAIL = 'azharberry53@gmail.com';
 const MAX_LEVEL = 10000;
 const XP_PER_LEVEL_BASE = 100;
 const FEED_PAGE_SIZE = 10;
-const AD_INTERVAL_POSTS = 5;
+const AD_INTERVAL_POSTS = 4;
 const AD_INTERSTITIAL_INTERVAL = 300000;
 const BANNER_REFRESH_INTERVAL = 60000;
 const STORY_DURATION = 5000;
@@ -105,13 +105,28 @@ function getFirebaseFunctions() {
   return firebaseFunctions;
 }
 
+// ==================== ADSTERRA CONFIG ====================
+const ADSTERRA_NATIVE_KEY = '';
+const ADSTERRA_NATIVE_URL = '';
+
+const PLACEHOLDER_ADS = [
+  { icon: '🛍️', title: 'Shop the Latest Trends', desc: 'Amazing products at unbeatable prices', cta: 'Shop Now', gradient: 'linear-gradient(135deg, #ff6bb5, #a78bfa)' },
+  { icon: '🎮', title: 'Play Free Games', desc: 'Thousands of fun games in your browser', cta: 'Play Free', gradient: 'linear-gradient(135deg, #7dd3fc, #a78bfa)' },
+  { icon: '📱', title: 'Get Our Mobile App', desc: 'Better experience on iOS & Android', cta: 'Download', gradient: 'linear-gradient(135deg, #86efac, #4ade80)' },
+  { icon: '🎁', title: 'Special Offer Just For You', desc: 'Limited time deal - Don\'t miss out!', cta: 'Claim Now', gradient: 'linear-gradient(135deg, #fda4af, #f43f5e)' },
+  { icon: '✨', title: 'Premium Features Await', desc: 'Unlock everything with premium plan', cta: 'Try Free', gradient: 'linear-gradient(135deg, #fcd34d, #f59e0b)' },
+  { icon: '🎬', title: 'Watch Movies & TV', desc: 'Unlimited streaming, no ads', cta: 'Start Free Trial', gradient: 'linear-gradient(135deg, #c084fc, #a855f7)' },
+  { icon: '💎', title: 'Invest Smarter', desc: 'Start with just $1 - Grow your wealth', cta: 'Learn More', gradient: 'linear-gradient(135deg, #67e8f9, #06b6d4)' },
+  { icon: '🍕', title: 'Food Delivered Fast', desc: 'Your favorite meals in 30 minutes', cta: 'Order Now', gradient: 'linear-gradient(135deg, #fca5a5, #ef4444)' },
+];
+
 // ==================== TEXT BACKGROUNDS ====================
 const TEXT_BG_COLORS = [
-  'linear-gradient(135deg, #e91e8c, #7c3aed)',
-  'linear-gradient(135deg, #3b82f6, #06b6d4)',
-  'linear-gradient(135deg, #f43f5e, #f97316)',
-  'linear-gradient(135deg, #10b981, #059669)',
-  'linear-gradient(135deg, #8b5cf6, #ec4899)',
+  'linear-gradient(135deg, #ff6bb5, #a78bfa)',
+  'linear-gradient(135deg, #7dd3fc, #a78bfa)',
+  'linear-gradient(135deg, #fda4af, #fdba74)',
+  'linear-gradient(135deg, #86efac, #4ade80)',
+  'linear-gradient(135deg, #c084fc, #ec4899)',
   'linear-gradient(135deg, #1e1e3a, #0a0a1a)',
 ];
 
@@ -157,7 +172,7 @@ const TITLE_PRESETS = [
   { name: 'Vidr OG', rarity: 'legendary' },
 ];
 
-// ==================== GIFTS ====================
+// ==================== GIFTS - FREE (30) ====================
 const FREE_GIFTS = [
   { id: 'rose', emoji: '🌹', name: 'Rose', cost: 1 },
   { id: 'clap', emoji: '👏', name: 'Clap', cost: 1 },
@@ -191,6 +206,7 @@ const FREE_GIFTS = [
   { id: 'galaxy', emoji: '🌌', name: 'Galaxy', cost: 5000 },
 ];
 
+// ==================== GIFTS - PAID (30) ====================
 const PAID_GIFTS = [
   { id: 'lollipop', emoji: '🍭', name: 'Lollipop', cost: 1 },
   { id: 'rose_gold', emoji: '🥀', name: 'Rose Gold', cost: 2 },
@@ -323,7 +339,6 @@ const BOT_BIOS = [
 ];
 
 const BOT_VIDEO_URLS = [
-  // Google Cloud Storage sample videos (always work)
   'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
   'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
@@ -337,12 +352,6 @@ const BOT_VIDEO_URLS = [
   'https://storage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
   'https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
   'https://storage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4',
-  // W3Schools test videos
-  'https://www.w3schools.com/html/mov_bbb.mp4',
-  'https://www.w3schools.com/html/movie.mp4',
-  // Sample videos from various CDNs
-  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
-  'https://sample-videos.com/video321/mp4/480/big_buck_bunny_480p_1mb.mp4',
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
@@ -356,6 +365,10 @@ const BOT_VIDEO_URLS = [
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4',
+  'https://www.w3schools.com/html/mov_bbb.mp4',
+  'https://www.w3schools.com/html/movie.mp4',
+  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+  'https://sample-videos.com/video321/mp4/480/big_buck_bunny_480p_1mb.mp4',
 ];
 
 const BOT_CAPTIONS = [
@@ -457,7 +470,7 @@ function checkReferralParam() {
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', APP.darkMode ? 'dark' : 'light');
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = APP.darkMode ? '#0a0a1a' : '#faf5ff';
+  if (meta) meta.content = APP.darkMode ? '#1a1625' : '#fef7ff';
 }
 
 function toggleDarkMode() {
@@ -572,7 +585,7 @@ function launchConfetti() {
   canvas.height = window.innerHeight;
 
   const particles = [];
-  const colors = ['#e91e8c', '#7c3aed', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e', '#ec4899'];
+  const colors = ['#ff6bb5', '#a78bfa', '#fcd34d', '#86efac', '#7dd3fc', '#fda4af', '#c084fc'];
 
   for (let i = 0; i < 150; i++) {
     particles.push({
@@ -630,7 +643,6 @@ function navigateTo(page, data = null) {
     'liveStreamPage', 'profileVisitorsPage', 'earnPage', 'campaignPage', 'payoutPage'
   ];
 
-  // Handle special pages
   if (page === 'search') {
     openOverlayPage('searchPage');
     setTimeout(() => {
@@ -647,27 +659,26 @@ function navigateTo(page, data = null) {
   }
 
   if (pages.includes(page)) {
-    // Safely hide overlay pages
     overlayPages.forEach(p => {
       const el = document.getElementById(p);
       if (el) el.classList.remove('active');
     });
 
-    // Safely hide main pages
     pages.forEach(p => {
       const el = document.getElementById(p + 'Page');
       if (el) el.classList.remove('active');
     });
 
     const target = document.getElementById(page + 'Page');
-    if (target) target.classList.add('active');
+    if (target) {
+      target.classList.add('active');
+      target.scrollTop = 0;
+    }
 
-    // Update nav (safely)
     document.querySelectorAll('.nav-item').forEach(item => {
       item.classList.toggle('active', item.dataset.page === page);
     });
 
-    // Get elements safely
     const header = document.getElementById('topHeader');
     const storiesBar = document.getElementById('storiesBar');
     const feedTabs = document.getElementById('feedTabs');
@@ -714,10 +725,12 @@ function navigateTo(page, data = null) {
     }
   }
 }
+
 function openOverlayPage(pageId) {
   const page = document.getElementById(pageId);
   if (page) {
     page.style.display = 'flex';
+    page.scrollTop = 0;
     requestAnimationFrame(() => {
       page.classList.add('active');
     });
@@ -900,28 +913,64 @@ async function createUserDocument(user, displayName, username) {
     likesCount: 0,
     postsCount: 0,
     totalViews: 0,
-    verified: isAdminUser, 
+    verified: isAdminUser,
     verifiedUntil: null,
-    role: isAdminUser ? 'admin' : 'user', // Defaults to 'user' for everyone else
+    role: isAdminUser ? 'admin' : 'user',
     titles: [{ name: 'Newbie', rarity: 'common' }],
     selectedTitle: { name: 'Newbie', rarity: 'common' },
     achievements: {},
     selectedAchievements: [],
     banned: false,
+    banReason: '',
     suspended: false,
+    suspendedUntil: null,
     isPrivate: false,
     isBot: false,
     dailyStreak: 0,
+    lastDailyReward: null,
+    lastLoginDate: null,
+    freeBoostsUsed: 0,
+    freeBoostsResetMonth: new Date().getMonth(),
+    referredBy: referrer || null,
+    referralCount: 0,
+    referralEarnings: 0,
+    totalGiftsReceived: 0,
+    totalGiftsSent: 0,
+    totalSpent: 0,
+    totalEarned: 0,
+    stripeCustomerId: null,
+    stripeConnectId: null,
+    createdAt: now,
     lastActive: now,
-    createdAt: now
+    notifSettings: {
+      likes: true,
+      comments: true,
+      followers: true,
+      messages: true,
+      live: true,
+    },
+    blockedUsers: [],
+    profileViews: 0,
   };
 
-  await db.collection('users').doc(user.uid).set(userData);
-  await db.collection('usernames').doc(username).set({ uid: user.uid });
-  
-  if (referrer && referrer !== user.uid) {
-    processReferral(referrer, user.uid);
+  try {
+    await db.collection('users').doc(user.uid).set(userData, { merge: true });
+    await db.collection('usernames').doc(username).set({ uid: user.uid });
+  } catch (err) {
+    console.error('Error creating user document:', err);
+    throw err;
   }
+
+  if (referrer && referrer !== user.uid) {
+    processReferral(referrer, user.uid).catch(err => console.warn('Referral error:', err));
+    localStorage.removeItem('vidr_referrer');
+  }
+
+  addNotification(user.uid, {
+    type: 'system',
+    text: `Welcome to Vidr! Here's ${WELCOME_BONUS} free coins to get started! 🎉`,
+    icon: '🎁',
+  }).catch(err => console.warn('Notification error:', err));
 }
 
 async function processReferral(referrerId, newUserId) {
@@ -1001,16 +1050,8 @@ function updateStoryAvatar() {
 }
 
 async function onUserAuthenticated() {
-  // Fetch following list to fix feed button state
-  const followSnap = await db.collection('follows')
-    .where('followerId', '==', APP.currentUser.uid)
-    .get();
-  
-  APP.followingIds = new Set();
-  followSnap.forEach(doc => APP.followingIds.add(doc.data().followingId));
-  
   try {
-    // Try to update, but don't fail if document doesn't exist
+    // Update last active
     const userRef = db.collection('users').doc(APP.currentUser.uid);
     const doc = await userRef.get();
     
@@ -1021,11 +1062,19 @@ async function onUserAuthenticated() {
       });
     } else {
       console.warn('User document does not exist, creating one...');
-      // Create it if missing
       const username = generateUsername(APP.currentUser.displayName || APP.currentUser.email.split('@')[0]);
       await createUserDocument(APP.currentUser, APP.currentUser.displayName || 'User', username);
       await loadUserData();
     }
+
+    // Load following list for feed follow buttons
+    const followSnap = await db.collection('follows')
+      .where('followerId', '==', APP.currentUser.uid)
+      .get();
+    
+    APP.followingIds = new Set();
+    followSnap.forEach(doc => APP.followingIds.add(doc.data().followingId));
+    console.log(`Loaded ${APP.followingIds.size} following users`);
   } catch (err) {
     console.error('onUserAuthenticated error:', err);
   }
@@ -1110,6 +1159,7 @@ async function confirmLogout() {
     APP.feedPosts = [];
     APP.feedLastDoc = null;
     APP.notifications = [];
+    APP.followingIds = new Set();
 
     hideLoading();
     showAuth();
@@ -1166,9 +1216,7 @@ console.log('Vidr Part 2 loaded: Init, Auth, Navigation');
 // ==================== XP SYSTEM ====================
 
 function getXpForLevel(level) {
-  // Cap the level to prevent overflow
   const cappedLevel = Math.min(level, MAX_LEVEL);
-  // Use a more reasonable formula
   return Math.floor(XP_PER_LEVEL_BASE + (cappedLevel * 50));
 }
 
@@ -1282,7 +1330,7 @@ function startXpBoostTimer() {
 
   function updateTimer() {
     if (!APP.xpBoostEnd) {
-      timerEl.style.display = 'none';
+      if (timerEl) timerEl.style.display = 'none';
       clearInterval(APP.xpBoostTimer);
       return;
     }
@@ -1291,23 +1339,25 @@ function startXpBoostTimer() {
     const diff = APP.xpBoostEnd - now;
 
     if (diff <= 0) {
-      timerEl.style.display = 'none';
+      if (timerEl) timerEl.style.display = 'none';
       APP.xpBoostEnd = null;
       clearInterval(APP.xpBoostTimer);
       showToast('XP Boost expired!', 'info');
       return;
     }
 
-    timerEl.style.display = 'flex';
+    if (timerEl) timerEl.style.display = 'flex';
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
 
-    if (minutes >= 60) {
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      countdownEl.textContent = `${hours}h ${mins}m`;
-    } else {
-      countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    if (countdownEl) {
+      if (minutes >= 60) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        countdownEl.textContent = `${hours}h ${mins}m`;
+      } else {
+        countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
     }
   }
 
@@ -1563,6 +1613,7 @@ function startNotificationListener() {
 
 function updateNotifBadge(count) {
   const badge = document.getElementById('notifBadge');
+  if (!badge) return;
   if (count > 0) {
     badge.style.display = 'flex';
     badge.textContent = count > 99 ? '99+' : count;
@@ -1596,6 +1647,7 @@ function startChatBadgeListener() {
       });
 
       const badge = document.getElementById('chatNavBadge');
+      if (!badge) return;
       if (totalUnread > 0) {
         badge.style.display = 'flex';
         badge.textContent = totalUnread > 99 ? '99+' : totalUnread;
@@ -1612,18 +1664,19 @@ function startStoriesHideTimer() {
 
   APP.storiesHidden = false;
   const storiesBar = document.getElementById('storiesBar');
-  storiesBar.classList.remove('hidden');
+  if (storiesBar) storiesBar.classList.remove('hidden');
 
   APP.storiesHideTimer = setTimeout(() => {
     APP.storiesHidden = true;
-    storiesBar.classList.add('hidden');
+    if (storiesBar) storiesBar.classList.add('hidden');
   }, STORIES_HIDE_DELAY);
 }
 
 // ==================== AD SYSTEM ====================
+
 function setupBannerAd() {
   const bannerAd = document.getElementById('bannerAd');
-  if (!bannerAd) return; // Safety check
+  if (!bannerAd) return;
   
   bannerAd.style.display = 'flex';
   loadAdsterraBanner();
@@ -1636,20 +1689,11 @@ function setupBannerAd() {
 
 function loadAdsterraBanner() {
   const bannerContent = document.getElementById('bannerAdContent');
-  if (!bannerContent) return; // Safety check - THIS FIXES THE ERROR
+  if (!bannerContent) return;
   
   bannerContent.innerHTML = `
     <div style="width:320px;height:50px;background:var(--bg-tertiary);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted)">
-      <script>
-  atOptions = {
-    'key' : 'd5b030ab7dc6f25911930cebe81375a3',
-    'format' : 'iframe',
-    'height' : 60,
-    'width' : 468,
-    'params' : {}
-  };
-</script>
-<script src="https://www.highperformanceformat.com/d5b030ab7dc6f25911930cebe81375a3/invoke.js"></script>
+      Advertisement
     </div>
   `;
 
@@ -1671,54 +1715,24 @@ function showInterstitialAd() {
 }
 
 function showRewardedAd(callback) {
-  // REPLACE 'YOUR_NATIVE_BANNER_KEY' with your actual Adsterra Native Banner key
-  const NATIVE_AD_KEY = '33a09e788da26a493e7cb3d24079d49e'; // e.g., 'a1b2c3d4e5f6'
-  const NATIVE_AD_SRC = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js'; // Your actual URL
-  
   openCenterModal(`
-    <div class="modal-title">📺 Watch Ad to Earn</div>
-    <p class="modal-text" style="margin-bottom:12px">Please watch the ad below to claim your reward</p>
-    
-    <div id="rewardedAdContainer" style="min-height:280px;background:var(--bg-tertiary);border-radius:var(--radius-md);padding:16px;margin-bottom:12px;overflow:hidden">
-      <div id="container-${NATIVE_AD_KEY}"></div>
-      <div id="adFallback" style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">
-        <div style="font-size:40px;margin-bottom:10px">📺</div>
-        Loading ad...
+    <div class="modal-title">📺 Watch Ad</div>
+    <div id="rewardedAdContainer" style="min-height:200px;display:flex;align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0;padding:20px">
+      <div style="text-align:center;color:var(--text-muted);font-size:13px">
+        <div style="font-size:48px;margin-bottom:12px">📺</div>
+        Ad Playing...<br><br>
+        <div class="loading-spinner small" style="margin:0 auto"></div>
       </div>
     </div>
-    
-    <p class="modal-text" id="rewardedAdCountdown" style="text-align:center;font-weight:600">
-      ⏱️ Please wait <span id="adTimer">15</span> seconds...
-    </p>
-    
+    <p class="modal-text" id="rewardedAdCountdown">Please wait <span id="adTimer">15</span> seconds...</p>
     <div class="modal-actions">
       <button class="modal-btn secondary" onclick="cancelRewardedAd()">Cancel</button>
-      <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.4;cursor:not-allowed">
-        Claim Reward
-      </button>
+      <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.5">Claim Reward</button>
     </div>
   `);
 
-  // Load the Adsterra Native Banner script
-  const container = document.getElementById('rewardedAdContainer');
-  if (container) {
-    const script = document.createElement('script');
-    script.async = true;
-    script.setAttribute('data-cfasync', 'false');
-    script.src = NATIVE_AD_SRC;
-    script.onerror = () => {
-      const fallback = document.getElementById('adFallback');
-      if (fallback) {
-        fallback.innerHTML = '<div style="font-size:40px;margin-bottom:10px">📺</div>Ad loading... Please wait for the timer.';
-      }
-    };
-    container.appendChild(script);
-  }
-
-  // Store callback globally
   window._rewardedAdCallback = callback;
 
-  // 15 second countdown
   let seconds = 15;
   const timerEl = document.getElementById('adTimer');
   const claimBtn = document.getElementById('claimRewardBtn');
@@ -1730,9 +1744,7 @@ function showRewardedAd(callback) {
 
     if (seconds <= 0) {
       clearInterval(window._rewardedAdTimer);
-      if (countdownEl) {
-        countdownEl.innerHTML = '✅ <strong style="color:var(--success)">Ad completed! Claim your reward.</strong>';
-      }
+      if (countdownEl) countdownEl.innerHTML = '✅ <strong style="color:var(--success)">Ad completed! Claim your reward.</strong>';
       if (claimBtn) {
         claimBtn.disabled = false;
         claimBtn.style.opacity = '1';
@@ -1985,6 +1997,9 @@ async function followUser(targetUid) {
       followersCount: firebase.firestore.FieldValue.increment(1),
     });
 
+    // Update following set for feed
+    APP.followingIds.add(targetUid);
+
     await addNotification(targetUid, {
       type: 'follow',
       text: `${APP.currentUserData.displayName} started following you`,
@@ -2016,6 +2031,9 @@ async function unfollowUser(targetUid) {
       followersCount: firebase.firestore.FieldValue.increment(-1),
     });
 
+    // Update following set for feed
+    APP.followingIds.delete(targetUid);
+
     showToast('Unfollowed', 'info');
   } catch (err) {
     console.error('Unfollow error:', err);
@@ -2024,6 +2042,8 @@ async function unfollowUser(targetUid) {
 
 async function isFollowing(targetUid) {
   if (!APP.currentUser) return false;
+  // Check local cache first
+  if (APP.followingIds.has(targetUid)) return true;
   try {
     const doc = await db.collection('follows').doc(`${APP.currentUser.uid}_${targetUid}`).get();
     return doc.exists;
@@ -2263,7 +2283,7 @@ async function installApp() {
   }
 }
 
-console.log('Vidr Part 3 loaded: XP, Achievements, Notifications, Social');
+console.log('Vidr Part 3 loaded: XP, Achievements, Social');
 
 // ==========================================
 // VIDR - app.js Part 4
@@ -2304,44 +2324,59 @@ async function loadFeed(refresh = false) {
   }
 
   const feedLoading = document.getElementById('feedLoading');
-  feedLoading.style.display = 'flex';
+  if (feedLoading) feedLoading.style.display = 'flex';
 
   try {
+    // Fetch active live streams first (only on first load)
+    if (!APP.feedLastDoc) {
+      try {
+        const liveSnap = await db.collection('liveStreams')
+          .where('isActive', '==', true)
+          .limit(5)
+          .get();
+
+        const blockedUsers = APP.currentUserData?.blockedUsers || [];
+
+        liveSnap.forEach(doc => {
+          const data = doc.data();
+          if (blockedUsers.includes(data.hostUid)) return;
+          if (data.hostUid === APP.currentUser?.uid) return;
+
+          APP.feedPosts.push({
+            id: doc.id,
+            type: 'live_preview',
+            uid: data.hostUid,
+            hostName: data.hostName,
+            hostAvatar: data.hostAvatar,
+            hostVerified: data.hostVerified,
+            title: data.title,
+            viewerCount: data.viewerCount || 0,
+            isLive: true,
+            createdAt: data.createdAt,
+          });
+        });
+      } catch (err) {
+        console.warn('Live stream fetch error:', err);
+      }
+    }
+
     let query = db.collection('posts')
       .where('visibility', 'in', ['public', 'followers'])
       .orderBy('createdAt', 'desc')
       .limit(FEED_PAGE_SIZE);
 
-      try {
-    // 1. Fetch Active Live Streams first
-    const liveSnap = await db.collection('liveStreams')
-      .where('isActive', '==', true)
-      .limit(5)
-      .get();
-      
-    const liveItems = [];
-    liveSnap.forEach(doc => {
-      const data = doc.data();
-      liveItems.push({
-        id: doc.id,
-        ...data,
-        type: 'live_preview', // Custom type
-        uid: data.hostUid,
-        createdAt: data.createdAt
-      });
-    });
-        
     if (APP.feedLastDoc) {
       query = query.startAfter(APP.feedLastDoc);
     }
 
     const snapshot = await query.get();
-             
+
     if (snapshot.empty) {
       APP.feedEnded = true;
-      feedLoading.style.display = 'none';
+      if (feedLoading) feedLoading.style.display = 'none';
       APP.feedLoading = false;
       if (APP.feedPosts.length === 0) renderEmptyFeed();
+      else renderFeed();
       return;
     }
 
@@ -2363,12 +2398,12 @@ async function loadFeed(refresh = false) {
     }
 
     renderFeed();
-    feedLoading.style.display = 'none';
+    if (feedLoading) feedLoading.style.display = 'none';
     APP.feedLoading = false;
     trackPostViews();
   } catch (err) {
     console.error('Load feed error:', err);
-    feedLoading.style.display = 'none';
+    if (feedLoading) feedLoading.style.display = 'none';
     APP.feedLoading = false;
     showToast('Failed to load feed', 'error');
   }
@@ -2390,18 +2425,13 @@ async function loadFollowingFeed(refresh = false) {
   }
 
   const feedLoading = document.getElementById('feedLoading');
-  feedLoading.style.display = 'flex';
+  if (feedLoading) feedLoading.style.display = 'flex';
 
   try {
-    const followingSnap = await db.collection('follows')
-      .where('followerId', '==', APP.currentUser.uid)
-      .get();
-
-    const followingIds = [];
-    followingSnap.forEach(doc => followingIds.push(doc.data().followingId));
+    const followingIds = Array.from(APP.followingIds);
 
     if (followingIds.length === 0) {
-      feedLoading.style.display = 'none';
+      if (feedLoading) feedLoading.style.display = 'none';
       APP.feedLoading = false;
       renderEmptyFollowingFeed();
       return;
@@ -2450,11 +2480,11 @@ async function loadFollowingFeed(refresh = false) {
     }
 
     renderFollowingFeed();
-    feedLoading.style.display = 'none';
+    if (feedLoading) feedLoading.style.display = 'none';
     APP.feedLoading = false;
   } catch (err) {
     console.error('Load following feed error:', err);
-    feedLoading.style.display = 'none';
+    if (feedLoading) feedLoading.style.display = 'none';
     APP.feedLoading = false;
   }
 }
@@ -2463,6 +2493,7 @@ async function loadFollowingFeed(refresh = false) {
 
 function renderFeed() {
   const container = document.getElementById('feedContainer');
+  if (!container) return;
   const posts = APP.feedTab === 'foryou' ? APP.feedPosts : APP.followingFeedPosts;
 
   let html = '';
@@ -2478,11 +2509,11 @@ function renderFeed() {
   setupVideoObservers();
   setupCarousels();
   setupFeedScroll();
-  injectFeedAds(); // ADD THIS LINE
 }
 
 function renderFollowingFeed() {
   const container = document.getElementById('feedContainer');
+  if (!container) return;
 
   if (APP.followingFeedPosts.length === 0) {
     renderEmptyFollowingFeed();
@@ -2501,11 +2532,11 @@ function renderFollowingFeed() {
   setupVideoObservers();
   setupCarousels();
   setupFeedScroll();
-  injectFeedAds(); // ADD THIS LINE
 }
 
 function renderEmptyFeed() {
   const container = document.getElementById('feedContainer');
+  if (!container) return;
   container.innerHTML = `
     <div class="empty-state" style="min-height:60vh">
       <div class="empty-state-icon">📱</div>
@@ -2518,6 +2549,7 @@ function renderEmptyFeed() {
 
 function renderEmptyFollowingFeed() {
   const container = document.getElementById('feedContainer');
+  if (!container) return;
   container.innerHTML = `
     <div class="empty-state" style="min-height:60vh">
       <div class="empty-state-icon">👥</div>
@@ -2529,32 +2561,40 @@ function renderEmptyFollowingFeed() {
 }
 
 function renderFeedItem(post) {
+  // Live preview item
   if (post.type === 'live_preview') {
-     return `
+    return `
       <div class="feed-item live-feed-item" onclick="joinLiveStream('${post.uid}')">
         <div class="feed-item-header">
-           <img class="feed-avatar avatar-live" src="${post.hostAvatar}">
-           <div class="feed-user-info">
-              <span class="feed-displayname">${post.hostName} is LIVE</span>
-              <span class="feed-time">Tap to join</span>
-           </div>
+          <div class="feed-avatar-wrap">
+            <img class="feed-avatar avatar-live" src="${post.hostAvatar || 'default-avatar.png'}" alt="" onerror="this.src='default-avatar.png'">
+          </div>
+          <div class="feed-user-info">
+            <div class="feed-username-row">
+              <span class="feed-displayname">${escapeHTML(post.hostName || 'User')}</span>
+              ${post.hostVerified ? getVerifiedBadge() : ''}
+              <span class="live-badge-small">🔴 LIVE</span>
+            </div>
+            <span class="feed-time">👁 ${formatNumber(post.viewerCount)} watching · Tap to join</span>
+          </div>
         </div>
-        <div class="feed-media">
-           <div class="live-placeholder" style="background:#000; height:400px; display:flex; align-items:center; justify-content:center; color:#white;">
-              <h2 class="live-indicator">WATCH LIVE</h2>
-           </div>
+        <div class="feed-media live-preview-media">
+          <div class="live-preview-content">
+            <div class="live-preview-icon">🔴</div>
+            <div class="live-preview-title">${escapeHTML(post.title || 'Live Stream')}</div>
+            <button class="live-preview-btn">Join Live</button>
+          </div>
         </div>
       </div>
-     `;
+    `;
   }
+
   const user = post.userData || {};
   const isVerified = user.verified;
   const isAdmin = user.role === 'admin';
   const showGlow = isVerified || isAdmin;
   const isOwn = post.uid === APP.currentUser?.uid;
-  // Inside renderFeedItem(post)
-const followingClass = APP.followingIds.has(post.uid) ? 'following' : '';
-const followingText = APP.followingIds.has(post.uid) ? 'Following' : 'Follow';
+  const isFollowing = APP.followingIds.has(post.uid);
 
   let mediaHTML = '';
 
@@ -2601,11 +2641,11 @@ const followingText = APP.followingIds.has(post.uid) ? 'Following' : 'Follow';
           </div>
           <span class="feed-time">${timeAgo(post.createdAt)}</span>
         </div>
-       ${!isOwn ? `
-  <button class="feed-follow-btn ${followingClass}" id="followBtn_${post.id}" onclick="event.stopPropagation();toggleFeedFollow('${post.uid}','${post.id}')">
-    ${followingText}
-  </button>
-` : ''}
+        ${!isOwn ? `
+          <button class="feed-follow-btn ${isFollowing ? 'following' : ''}" id="followBtn_${post.id}" onclick="event.stopPropagation();toggleFeedFollow('${post.uid}','${post.id}')">
+            ${isFollowing ? 'Following' : 'Follow'}
+          </button>
+        ` : ''}
         <button class="feed-more-btn" onclick="event.stopPropagation();openPostOptions('${post.id}','${post.uid}')">⋯</button>
       </div>
 
@@ -2691,7 +2731,7 @@ function renderImageMedia(post) {
   let slides = '';
   let dots = '';
   images.forEach((url, i) => {
-    slides += `<div class="feed-carousel-slide"><img src="${url}" alt="" loading="lazy" onerror="this.src='default-product.png'"></div>`;
+    slides += `<div class="feed-carousel-slide"><img src="${url}" alt="" loading="lazy" onerror="this.src='default-product.png'" draggable="false"></div>`;
     dots += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`;
   });
 
@@ -2714,71 +2754,8 @@ function renderTextMedia(post) {
   `;
 }
 
-// ==================== AD SYSTEM ====================
-const ADSTERRA_NATIVE_KEY = '33a09e788da26a493e7cb3d24079d49e'; // Leave empty to use beautiful placeholders
-const ADSTERRA_NATIVE_URL = 'https://hystericallikingdowntown.com/33a09e788da26a493e7cb3d24079d49e/invoke.js'; // Leave empty to use beautiful placeholders
-
-const PLACEHOLDER_ADS = [
-  {
-    icon: '🛍️',
-    title: 'Shop the Latest Trends',
-    desc: 'Amazing products at unbeatable prices',
-    cta: 'Shop Now',
-    gradient: 'linear-gradient(135deg, #ff6bb5, #a78bfa)'
-  },
-  {
-    icon: '🎮',
-    title: 'Play Free Games',
-    desc: 'Thousands of fun games in your browser',
-    cta: 'Play Free',
-    gradient: 'linear-gradient(135deg, #7dd3fc, #a78bfa)'
-  },
-  {
-    icon: '📱',
-    title: 'Get Our Mobile App',
-    desc: 'Better experience on iOS & Android',
-    cta: 'Download',
-    gradient: 'linear-gradient(135deg, #86efac, #4ade80)'
-  },
-  {
-    icon: '🎁',
-    title: 'Special Offer Just For You',
-    desc: 'Limited time deal - Don\'t miss out!',
-    cta: 'Claim Now',
-    gradient: 'linear-gradient(135deg, #fda4af, #f43f5e)'
-  },
-  {
-    icon: '✨',
-    title: 'Premium Features Await',
-    desc: 'Unlock everything with premium plan',
-    cta: 'Try Free',
-    gradient: 'linear-gradient(135deg, #fcd34d, #f59e0b)'
-  },
-  {
-    icon: '🎬',
-    title: 'Watch Movies & TV',
-    desc: 'Unlimited streaming, no ads',
-    cta: 'Start Free Trial',
-    gradient: 'linear-gradient(135deg, #c084fc, #a855f7)'
-  },
-  {
-    icon: '💎',
-    title: 'Invest Smarter',
-    desc: 'Start with just $1 - Grow your wealth',
-    cta: 'Learn More',
-    gradient: 'linear-gradient(135deg, #67e8f9, #06b6d4)'
-  },
-  {
-    icon: '🍕',
-    title: 'Food Delivered Fast',
-    desc: 'Your favorite meals in 30 minutes',
-    cta: 'Order Now',
-    gradient: 'linear-gradient(135deg, #fca5a5, #ef4444)'
-  }
-];
-
 function renderFeedAd(index) {
-  // Use Adsterra if configured, otherwise beautiful placeholder
+  // Use Adsterra if configured
   if (ADSTERRA_NATIVE_KEY && ADSTERRA_NATIVE_URL) {
     return `
       <div class="feed-ad" data-ad-index="${index}">
@@ -2810,20 +2787,6 @@ function handleAdClick(index) {
   showToast('Thanks for supporting Vidr! 💖', 'success');
 }
 
-function injectFeedAds() {
-  if (!USE_ADSTERRA || !ADSTERRA_NATIVE_URL) return;
-  
-  document.querySelectorAll('.adsterra-native-container').forEach(container => {
-    if (container.dataset.loaded) return;
-    container.dataset.loaded = 'true';
-    
-    const script = document.createElement('script');
-    script.async = true;
-    script.setAttribute('data-cfasync', 'false');
-    script.src = ADSTERRA_NATIVE_URL;
-    container.appendChild(script);
-  });
-}
 // ==================== VIDEO OBSERVER ====================
 
 function setupVideoObservers() {
@@ -2857,10 +2820,13 @@ function toggleVideoPlay(video) {
   }
 }
 
-// ==================== CAROUSEL ====================
+// ==================== CAROUSEL (Touch + Mouse for PC) ====================
 
 function setupCarousels() {
   document.querySelectorAll('.feed-carousel').forEach(carousel => {
+    if (carousel.dataset.setup) return;
+    carousel.dataset.setup = 'true';
+    
     let startX = 0;
     let currentX = 0;
     let isDragging = false;
@@ -2872,6 +2838,7 @@ function setupCarousels() {
       startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
       isDragging = true;
       track.style.transition = 'none';
+      if (e.type.includes('mouse')) e.preventDefault();
     };
 
     const move = (e) => {
@@ -2908,8 +2875,13 @@ function setupCarousels() {
     
     // Mouse events for PC
     carousel.addEventListener('mousedown', start);
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', end);
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', end);
+    
+    // Prevent default drag behavior
+    carousel.querySelectorAll('img').forEach(img => {
+      img.addEventListener('dragstart', (e) => e.preventDefault());
+    });
   });
 }
 
@@ -2917,6 +2889,8 @@ function setupCarousels() {
 
 function setupFeedScroll() {
   const feedPage = document.getElementById('homePage');
+  if (!feedPage || feedPage.dataset.scrollSetup) return;
+  feedPage.dataset.scrollSetup = 'true';
 
   const handleScroll = throttle(() => {
     if (APP.currentPage !== 'home') return;
@@ -2959,8 +2933,10 @@ function setupFeedScroll() {
     if (!pulling) return;
     const diff = e.touches[0].clientY - startY;
     if (diff > 0 && diff < 120) {
-      pullRefresh.style.top = (diff - 50) + 'px';
-      if (diff > 80) pullRefresh.classList.add('active');
+      if (pullRefresh) {
+        pullRefresh.style.top = (diff - 50) + 'px';
+        if (diff > 80) pullRefresh.classList.add('active');
+      }
     }
   }, { passive: true });
 
@@ -2968,7 +2944,7 @@ function setupFeedScroll() {
     if (!pulling) return;
     pulling = false;
 
-    if (pullRefresh.classList.contains('active')) {
+    if (pullRefresh && pullRefresh.classList.contains('active')) {
       if (APP.feedTab === 'foryou') {
         loadFeed(true);
       } else {
@@ -2979,8 +2955,10 @@ function setupFeedScroll() {
       showToast('Refreshing...', 'info');
     }
 
-    pullRefresh.classList.remove('active');
-    pullRefresh.style.top = '-50px';
+    if (pullRefresh) {
+      pullRefresh.classList.remove('active');
+      pullRefresh.style.top = '-50px';
+    }
   });
 })();
 
@@ -3027,16 +3005,27 @@ async function toggleFeedFollow(uid, postId) {
   const btn = document.getElementById(`followBtn_${postId}`);
   if (!btn) return;
 
-  const following = await isFollowing(uid);
+  const following = APP.followingIds.has(uid);
 
   if (following) {
     await unfollowUser(uid);
-    btn.textContent = 'Follow';
-    btn.classList.remove('following');
+    // Update all follow buttons for this user across the page
+    document.querySelectorAll(`[id^="followBtn_"]`).forEach(b => {
+      const post = APP.feedPosts.find(p => p.id === b.id.replace('followBtn_', ''));
+      if (post && post.uid === uid) {
+        b.textContent = 'Follow';
+        b.classList.remove('following');
+      }
+    });
   } else {
     await followUser(uid);
-    btn.textContent = 'Following';
-    btn.classList.add('following');
+    document.querySelectorAll(`[id^="followBtn_"]`).forEach(b => {
+      const post = APP.feedPosts.find(p => p.id === b.id.replace('followBtn_', ''));
+      if (post && post.uid === uid) {
+        b.textContent = 'Following';
+        b.classList.add('following');
+      }
+    });
   }
 }
 
@@ -3050,14 +3039,11 @@ function openPostOptions(postId, uid) {
 
   let options = '';
 
-  // Delete option (own posts or admin)
   if (isOwn || isAdmin) {
     options += `
       <div class="sheet-option danger" onclick="deletePost('${postId}')">
         <div class="sheet-option-icon">🗑️</div>
-        <div class="sheet-option-text">
-          <div class="sheet-option-label" style="color:var(--error)">Delete Post</div>
-        </div>
+        <div class="sheet-option-text"><div class="sheet-option-label" style="color:var(--error)">Delete Post</div></div>
       </div>
     `;
   }
@@ -3104,7 +3090,6 @@ function openPostOptions(postId, uid) {
 async function deletePost(postId) {
   closeBottomSheet();
 
-  // Small delay to ensure bottom sheet closes first
   setTimeout(() => {
     openCenterModal(`
       <div class="modal-title">🗑️ Delete Post</div>
@@ -3122,14 +3107,10 @@ async function confirmDeletePost(postId) {
   showLoading();
   
   try {
-    // Delete the post
     await db.collection('posts').doc(postId).delete();
-    
-    // Update local arrays
     APP.feedPosts = APP.feedPosts.filter(p => p.id !== postId);
     APP.followingFeedPosts = APP.followingFeedPosts.filter(p => p.id !== postId);
 
-    // Decrement post count
     await db.collection('users').doc(APP.currentUser.uid).update({
       postsCount: firebase.firestore.FieldValue.increment(-1),
     });
@@ -3137,19 +3118,15 @@ async function confirmDeletePost(postId) {
     hideLoading();
     showToast('Post deleted successfully', 'success');
 
-    // Close single post view if open
     const singlePostPage = document.getElementById('singlePostPage');
     if (singlePostPage && singlePostPage.classList.contains('active')) {
       closeOverlayPage('singlePostPage');
     }
 
-    // Refresh based on current page
     setTimeout(() => {
       if (APP.currentPage === 'profile') {
-        // Refresh profile to update grid
         loadProfile(APP.currentUser.uid);
       } else if (APP.currentPage === 'home') {
-        // Re-render feed
         if (APP.feedTab === 'foryou') {
           renderFeed();
         } else {
@@ -3164,6 +3141,7 @@ async function confirmDeletePost(postId) {
     console.error('Delete post error:', err);
   }
 }
+
 async function repostPost(postId) {
   closeBottomSheet();
   const post = APP.feedPosts.find(p => p.id === postId) || APP.followingFeedPosts.find(p => p.id === postId);
@@ -3531,9 +3509,12 @@ async function openYellowBag(postId) {
       if (header) header.style.display = 'none';
       if (actions) actions.style.display = 'none';
       if (caption) caption.style.display = 'none';
-      document.getElementById('bottomNav').style.display = 'none';
-      document.getElementById('topHeader').style.display = 'none';
-      document.getElementById('bannerAd').style.display = 'none';
+      const bn = document.getElementById('bottomNav');
+      const th = document.getElementById('topHeader');
+      const ba = document.getElementById('bannerAd');
+      if (bn) bn.style.display = 'none';
+      if (th) th.style.display = 'none';
+      if (ba) ba.style.display = 'none';
     }, 800);
   }, { passive: true });
 
@@ -3544,9 +3525,12 @@ async function openYellowBag(postId) {
       document.querySelectorAll('.feed-item-header').forEach(el => el.style.display = '');
       document.querySelectorAll('.feed-actions').forEach(el => el.style.display = '');
       document.querySelectorAll('.feed-caption-area').forEach(el => el.style.display = '');
-      document.getElementById('bottomNav').style.display = 'flex';
-      document.getElementById('topHeader').style.display = 'flex';
-      document.getElementById('bannerAd').style.display = 'flex';
+      const bn = document.getElementById('bottomNav');
+      const th = document.getElementById('topHeader');
+      const ba = document.getElementById('bannerAd');
+      if (bn) bn.style.display = 'flex';
+      if (th) th.style.display = 'flex';
+      if (ba) ba.style.display = 'flex';
     }
   });
 })();
@@ -3631,6 +3615,7 @@ async function loadStories() {
 
 function renderStories() {
   const scroll = document.getElementById('storiesScroll');
+  if (!scroll) return;
 
   let html = `
     <div class="story-item add-story" onclick="openCreateStory()">
@@ -3680,29 +3665,39 @@ function openStoryViewer(userIndex) {
   APP.currentStoryIndex = 0;
 
   const viewer = document.getElementById('storyViewer');
+  if (!viewer) return;
+  
   viewer.style.display = 'flex';
-  document.getElementById('bottomNav').style.display = 'none';
-  document.getElementById('topHeader').style.display = 'none';
-  document.getElementById('storiesBar').classList.add('hidden');
-  document.getElementById('bannerAd').style.display = 'none';
+  const bn = document.getElementById('bottomNav');
+  const th = document.getElementById('topHeader');
+  const sb = document.getElementById('storiesBar');
+  const ba = document.getElementById('bannerAd');
+  if (bn) bn.style.display = 'none';
+  if (th) th.style.display = 'none';
+  if (sb) sb.classList.add('hidden');
+  if (ba) ba.style.display = 'none';
 
   renderCurrentStory();
 }
 
 function closeStoryViewer() {
   const viewer = document.getElementById('storyViewer');
-  viewer.style.display = 'none';
+  if (viewer) viewer.style.display = 'none';
 
   if (APP.storyTimer) clearTimeout(APP.storyTimer);
   if (APP.storyProgressTimer) clearInterval(APP.storyProgressTimer);
 
-  document.getElementById('bottomNav').style.display = 'flex';
-  document.getElementById('bannerAd').style.display = 'flex';
+  const bn = document.getElementById('bottomNav');
+  const ba = document.getElementById('bannerAd');
+  if (bn) bn.style.display = 'flex';
+  if (ba) ba.style.display = 'flex';
 
   if (APP.currentPage === 'home') {
-    document.getElementById('topHeader').style.display = 'flex';
+    const th = document.getElementById('topHeader');
+    if (th) th.style.display = 'flex';
     if (!APP.storiesHidden) {
-      document.getElementById('storiesBar').classList.remove('hidden');
+      const sb = document.getElementById('storiesBar');
+      if (sb) sb.classList.remove('hidden');
     }
   }
 }
@@ -3744,6 +3739,8 @@ function renderCurrentStory() {
   }
 
   const viewerEl = document.getElementById('storyViewerContent');
+  if (!viewerEl) return;
+  
   viewerEl.innerHTML = `
     <div class="story-progress-bar">${progressHTML}</div>
     <div class="story-header">
@@ -4018,6 +4015,7 @@ function createTextStory() {
 
 function selectStoryBg(index) {
   const preview = document.getElementById('textStoryPreview');
+  if (!preview) return;
   preview.style.background = TEXT_BG_COLORS[index];
 
   document.querySelectorAll('#textStoryBgOptions .text-bg-option').forEach((el, i) => {
@@ -4070,22 +4068,15 @@ async function loadDiscover(refresh = false) {
 
   const container = document.getElementById('discoverGrid');
   const loading = document.getElementById('discoverLoading');
+  if (!container) return;
 
   if (APP.discoverUsers.length === 0) {
     container.innerHTML = '';
   }
 
-  loading.style.display = 'flex';
+  if (loading) loading.style.display = 'flex';
 
   try {
-    const followingSnap = await db.collection('follows')
-      .where('followerId', '==', APP.currentUser.uid)
-      .get();
-
-    const followingIds = new Set();
-    followingSnap.forEach(doc => followingIds.add(doc.data().followingId));
-    followingIds.add(APP.currentUser.uid);
-
     let query = db.collection('users')
       .where('banned', '==', false)
       .orderBy('followersCount', 'desc')
@@ -4103,7 +4094,8 @@ async function loadDiscover(refresh = false) {
     for (const doc of snapshot.docs) {
       const user = { id: doc.id, ...doc.data() };
 
-      if (followingIds.has(user.uid)) continue;
+      if (APP.followingIds.has(user.uid)) continue;
+      if (user.uid === APP.currentUser?.uid) continue;
       if (blockedUsers.includes(user.uid)) continue;
       if (user.role === 'admin' && user.uid !== APP.currentUser.uid) continue;
 
@@ -4116,16 +4108,17 @@ async function loadDiscover(refresh = false) {
     }
 
     renderDiscover();
-    loading.style.display = 'none';
+    if (loading) loading.style.display = 'none';
     setupDiscoverScroll();
   } catch (err) {
     console.error('Load discover error:', err);
-    loading.style.display = 'none';
+    if (loading) loading.style.display = 'none';
   }
 }
 
 function renderDiscover() {
   const container = document.getElementById('discoverGrid');
+  if (!container) return;
 
   let html = '';
   APP.discoverUsers.forEach(user => {
@@ -4157,7 +4150,7 @@ async function toggleDiscoverFollow(uid) {
   const btn = document.getElementById(`discoverFollow_${uid}`);
   if (!btn) return;
 
-  const following = await isFollowing(uid);
+  const following = APP.followingIds.has(uid);
 
   if (following) {
     await unfollowUser(uid);
@@ -4172,6 +4165,8 @@ async function toggleDiscoverFollow(uid) {
 
 function setupDiscoverScroll() {
   const page = document.getElementById('discoverPage');
+  if (!page || page.dataset.scrollSetup) return;
+  page.dataset.scrollSetup = 'true';
 
   const handleScroll = throttle(() => {
     if (APP.currentPage !== 'discover') return;
@@ -4193,16 +4188,19 @@ function setupDiscoverScroll() {
 function setupSearch() {
   const input = document.getElementById('searchInput');
   const clearBtn = document.getElementById('searchClear');
+  if (!input) return;
 
   input.addEventListener('input', debounce((e) => {
     const query = e.target.value.trim();
-    clearBtn.style.display = query ? 'block' : 'none';
+    if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
 
     if (query.length >= 2) {
       performSearch(query);
     } else {
-      document.getElementById('searchResults').style.display = 'none';
-      document.getElementById('searchRecent').style.display = 'block';
+      const sr = document.getElementById('searchResults');
+      const srec = document.getElementById('searchRecent');
+      if (sr) sr.style.display = 'none';
+      if (srec) srec.style.display = 'block';
     }
   }, 400));
 
@@ -4212,8 +4210,11 @@ function setupSearch() {
 }
 
 async function performSearch(query) {
-  document.getElementById('searchRecent').style.display = 'none';
+  const srec = document.getElementById('searchRecent');
   const resultsContainer = document.getElementById('searchResults');
+  if (srec) srec.style.display = 'none';
+  if (!resultsContainer) return;
+  
   resultsContainer.style.display = 'block';
   resultsContainer.innerHTML = '<div class="loading-spinner small" style="margin:40px auto"></div>';
 
@@ -4411,9 +4412,12 @@ function clearAllRecent() {
 function clearSearch() {
   const input = document.getElementById('searchInput');
   if (input) input.value = '';
-  document.getElementById('searchClear').style.display = 'none';
-  document.getElementById('searchResults').style.display = 'none';
-  document.getElementById('searchRecent').style.display = 'block';
+  const sc = document.getElementById('searchClear');
+  const sr = document.getElementById('searchResults');
+  const srec = document.getElementById('searchRecent');
+  if (sc) sc.style.display = 'none';
+  if (sr) sr.style.display = 'none';
+  if (srec) srec.style.display = 'block';
 }
 
 // ==================== SINGLE POST VIEW ====================
@@ -4421,6 +4425,8 @@ function clearSearch() {
 async function openSinglePost(postId) {
   openOverlayPage('singlePostPage');
   const container = document.getElementById('singlePostContent');
+  if (!container) return;
+  
   container.innerHTML = '<div class="loading-spinner small" style="margin:40px auto"></div>';
 
   try {
@@ -4453,6 +4459,7 @@ async function openSinglePost(postId) {
 function renderNotifications() {
   openOverlayPage('notificationsPage');
   const container = document.getElementById('notificationList');
+  if (!container) return;
 
   if (APP.notifications.length === 0) {
     container.innerHTML = `
@@ -4583,6 +4590,7 @@ function openNewChat(postId = null) {
 
 async function searchNewChatUser(query, postId) {
   const container = document.getElementById('newChatResults');
+  if (!container) return;
   if (!query || query.length < 2) {
     container.innerHTML = '';
     return;
@@ -4654,17 +4662,19 @@ console.log('Vidr Part 5 loaded: Stories, Discover, Search, Notifications');
 async function loadProfile(uid, asOverlay = false) {
   if (!uid) return;
 
+  // Fix half-view bug by scrolling to top
+  const page = document.getElementById('profilePage');
+  if (page) page.scrollTop = 0;
+
   if (asOverlay && uid !== APP.currentUser?.uid) {
     openOverlayPage('profilePage');
   }
 
   const container = document.getElementById('profileContent');
+  if (!container) return;
+  
   container.innerHTML = '<div class="loading-spinner small" style="margin:60px auto"></div>';
-  
- // Fix the "half-view" bug by forcing scroll to top
-  const page = document.getElementById('profilePage');
-  if(page) page.scrollTop = 0;
-  
+
   try {
     const userData = await getUserData(uid);
     if (!userData) {
@@ -4677,11 +4687,11 @@ async function loadProfile(uid, asOverlay = false) {
     }
 
     const isOwn = uid === APP.currentUser?.uid;
-    const isAdmin = APP.currentUserData?.role === 'admin';
+    const isAdmin = APP.currentUserData?.role === 'admin' || APP.currentUser?.email === ADMIN_EMAIL;
     const isVerified = userData.verified;
-    const isUserAdmin = userData.role === 'admin';
+    const isUserAdmin = userData.role === 'admin' || userData.email === ADMIN_EMAIL;
     const showGlow = isVerified || isUserAdmin;
-    const following = isOwn ? false : await isFollowing(uid);
+    const following = isOwn ? false : APP.followingIds.has(uid);
 
     if (userData.isPrivate && !isOwn && !following && !isAdmin) {
       container.innerHTML = renderPrivateProfile(userData, uid);
@@ -4738,63 +4748,64 @@ async function loadProfile(uid, asOverlay = false) {
         mutualHTML = `<div class="mutual-badge">👥 ${mutualCount} mutual friends</div>`;
       }
     }
-    
-let quickBtns = '';
-if (isOwn) {
-  quickBtns = `
-    <div class="profile-menu-section">
-      <div class="profile-menu-title">💫 Rewards & Earnings</div>
-      <div class="profile-menu-grid">
-        <button class="profile-menu-item" onclick="openWallet()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fcd34d,#f59e0b)">💰</div>
-          <span>Wallet</span>
-        </button>
-        <button class="profile-menu-item" onclick="openSpinWheel()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#a78bfa,#7c3aed)">🎡</div>
-          <span>Spin</span>
-        </button>
-        <button class="profile-menu-item" onclick="openGames()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#ff6bb5,#ec4899)">🎮</div>
-          <span>Games</span>
-        </button>
-        <button class="profile-menu-item" onclick="openCampaign()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#7dd3fc,#3b82f6)">📺</div>
-          <span>Watch Ads</span>
-        </button>
-        <button class="profile-menu-item" onclick="openEarnPage()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#86efac,#10b981)">📋</div>
-          <span>How to Earn</span>
-        </button>
-        <button class="profile-menu-item" onclick="openReferral()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fda4af,#f43f5e)">👥</div>
-          <span>Refer</span>
-        </button>
-      </div>
 
-      <div class="profile-menu-title">🏆 Progress & Community</div>
-      <div class="profile-menu-grid">
-        <button class="profile-menu-item" onclick="openLeaderboard()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fcd34d,#f59e0b)">🏆</div>
-          <span>Leaderboard</span>
-        </button>
-        <button class="profile-menu-item" onclick="openXpBoost()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#a78bfa,#8b5cf6)">⚡</div>
-          <span>XP Boost</span>
-        </button>
-        <button class="profile-menu-item" onclick="openShop()">
-          <div class="profile-menu-icon" style="background:linear-gradient(135deg,#ff9bcf,#ff6bb5)">🛍️</div>
-          <span>Shop</span>
-        </button>
-        ${isAdmin || isUserAdmin ? `
-          <button class="profile-menu-item" onclick="openAdmin()">
-            <div class="profile-menu-icon" style="background:linear-gradient(135deg,#f87171,#dc2626)">⚙️</div>
-            <span>Admin</span>
-          </button>
-        ` : ''}
-      </div>
-    </div>
-  `;
-}
+    let quickBtns = '';
+    if (isOwn) {
+      quickBtns = `
+        <div class="profile-menu-section">
+          <div class="profile-menu-title">💫 Rewards & Earnings</div>
+          <div class="profile-menu-grid">
+            <button class="profile-menu-item" onclick="openWallet()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fcd34d,#f59e0b)">💰</div>
+              <span>Wallet</span>
+            </button>
+            <button class="profile-menu-item" onclick="openSpinWheel()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#a78bfa,#7c3aed)">🎡</div>
+              <span>Spin</span>
+            </button>
+            <button class="profile-menu-item" onclick="openGames()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#ff6bb5,#ec4899)">🎮</div>
+              <span>Games</span>
+            </button>
+            <button class="profile-menu-item" onclick="openCampaign()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#7dd3fc,#3b82f6)">📺</div>
+              <span>Watch Ads</span>
+            </button>
+            <button class="profile-menu-item" onclick="openEarnPage()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#86efac,#10b981)">📋</div>
+              <span>How to Earn</span>
+            </button>
+            <button class="profile-menu-item" onclick="openReferral()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fda4af,#f43f5e)">👥</div>
+              <span>Refer</span>
+            </button>
+          </div>
+
+          <div class="profile-menu-title">🏆 Progress & Community</div>
+          <div class="profile-menu-grid">
+            <button class="profile-menu-item" onclick="openLeaderboard()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#fcd34d,#f59e0b)">🏆</div>
+              <span>Leaderboard</span>
+            </button>
+            <button class="profile-menu-item" onclick="openXpBoost()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#a78bfa,#8b5cf6)">⚡</div>
+              <span>XP Boost</span>
+            </button>
+            <button class="profile-menu-item" onclick="openShop()">
+              <div class="profile-menu-icon" style="background:linear-gradient(135deg,#ff9bcf,#ff6bb5)">🛍️</div>
+              <span>Shop</span>
+            </button>
+            ${isAdmin || isUserAdmin ? `
+              <button class="profile-menu-item" onclick="openAdmin()">
+                <div class="profile-menu-icon" style="background:linear-gradient(135deg,#f87171,#dc2626)">⚙️</div>
+                <span>Admin</span>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
     let gridHTML = renderProfileGrid(posts);
     const coverClass = showGlow ? 'animated' : '';
 
@@ -4967,6 +4978,8 @@ async function switchProfileTab(tab, uid, btn) {
   if (btn) btn.classList.add('active');
 
   const container = document.getElementById('profileGridContainer');
+  if (!container) return;
+  
   container.innerHTML = '<div class="loading-spinner small" style="margin:40px auto"></div>';
 
   try {
@@ -5040,7 +5053,7 @@ async function toggleProfileFollow(uid) {
   const btn = document.getElementById('profileFollowBtn');
   if (!btn) return;
 
-  const following = await isFollowing(uid);
+  const following = APP.followingIds.has(uid);
   if (following) {
     await unfollowUser(uid);
     btn.textContent = 'Follow';
@@ -5106,9 +5119,11 @@ async function openFollowList(uid, type) {
       `;
     }
 
-    document.getElementById('followListContainer').innerHTML = html || '<p style="text-align:center;color:var(--text-muted);padding:20px">None yet</p>';
+    const listContainer = document.getElementById('followListContainer');
+    if (listContainer) listContainer.innerHTML = html || '<p style="text-align:center;color:var(--text-muted);padding:20px">None yet</p>';
   } catch (err) {
-    document.getElementById('followListContainer').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
+    const listContainer = document.getElementById('followListContainer');
+    if (listContainer) listContainer.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
   }
 }
 
@@ -5137,13 +5152,9 @@ function changeAvatar() {
       const url = await ref.getDownloadURL();
 
       try {
-        await db.collection('users').doc(APP.currentUser.uid).update({ 
-          photoURL: url 
-        });
-      } catch (updateErr) {
-        await db.collection('users').doc(APP.currentUser.uid).set({ 
-          photoURL: url 
-        }, { merge: true });
+        await db.collection('users').doc(APP.currentUser.uid).update({ photoURL: url });
+      } catch {
+        await db.collection('users').doc(APP.currentUser.uid).set({ photoURL: url }, { merge: true });
       }
       
       await APP.currentUser.updateProfile({ photoURL: url });
@@ -5171,37 +5182,24 @@ function changeCover() {
     const file = e.target.files[0];
     if (!file) return;
     
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       return showToast('Image too large! Max 10MB', 'error');
     }
     
     showLoading();
     try {
-      console.log('Compressing image...');
       const compressed = await compressImage(file, 1200, 0.85);
-      
-      console.log('Uploading to Storage...');
       const timestamp = Date.now();
       const path = `covers/${APP.currentUser.uid}_${timestamp}.jpg`;
       const ref = storage.ref(path);
       
-      const uploadTask = await ref.put(compressed);
-      console.log('Upload complete, getting URL...');
-      
+      await ref.put(compressed);
       const url = await ref.getDownloadURL();
-      console.log('Got URL:', url);
 
-      // Try to update, if fails create the document
       try {
-        await db.collection('users').doc(APP.currentUser.uid).update({ 
-          coverURL: url 
-        });
-      } catch (updateErr) {
-        console.log('Update failed, trying set with merge...');
-        await db.collection('users').doc(APP.currentUser.uid).set({ 
-          coverURL: url 
-        }, { merge: true });
+        await db.collection('users').doc(APP.currentUser.uid).update({ coverURL: url });
+      } catch {
+        await db.collection('users').doc(APP.currentUser.uid).set({ coverURL: url }, { merge: true });
       }
       
       APP.currentUserData.coverURL = url;
@@ -5212,14 +5210,7 @@ function changeCover() {
     } catch (err) {
       hideLoading();
       console.error('Cover upload error:', err);
-      
-      if (err.code === 'storage/unauthorized') {
-        showToast('Storage permission denied. Check Storage rules.', 'error');
-      } else if (err.code === 'storage/canceled') {
-        showToast('Upload canceled', 'warning');
-      } else {
-        showToast('Failed to update cover: ' + err.message, 'error');
-      }
+      showToast('Failed to update cover: ' + err.message, 'error');
     }
   };
   input.click();
@@ -5237,6 +5228,7 @@ function renderEditProfile() {
   if (!u) return;
 
   const container = document.getElementById('editProfileContent');
+  if (!container) return;
 
   const allTitles = u.titles || [];
   let titleOptions = '<option value="">None</option>';
@@ -5301,6 +5293,7 @@ function updateBioCount() {
 let editUsernameTimeout = null;
 function checkEditUsername(value) {
   const status = document.getElementById('editUsernameStatus');
+  if (!status) return;
   const username = value.trim().toLowerCase();
 
   if (editUsernameTimeout) clearTimeout(editUsernameTimeout);
@@ -5427,7 +5420,8 @@ function toggleAchievementSelection(id, el) {
   if (idx > -1) {
     window._tempSelectedAchievements.splice(idx, 1);
     el.style.borderColor = 'transparent';
-    document.getElementById(`achievCheck_${id}`).textContent = '⬜';
+    const check = document.getElementById(`achievCheck_${id}`);
+    if (check) check.textContent = '⬜';
   } else {
     if (window._tempSelectedAchievements.length >= 3) {
       showToast('Max 3 achievements', 'warning');
@@ -5435,7 +5429,8 @@ function toggleAchievementSelection(id, el) {
     }
     window._tempSelectedAchievements.push(id);
     el.style.borderColor = 'var(--primary)';
-    document.getElementById(`achievCheck_${id}`).textContent = '✅';
+    const check = document.getElementById(`achievCheck_${id}`);
+    if (check) check.textContent = '✅';
   }
 }
 
@@ -5457,6 +5452,7 @@ async function saveSelectedAchievements() {
 
 async function loadChatList() {
   const container = document.getElementById('chatList');
+  if (!container) return;
   container.innerHTML = '<div class="loading-spinner small" style="margin:40px auto"></div>';
 
   try {
@@ -5526,13 +5522,16 @@ async function openChatRoom(chatRoomId, otherUid) {
   const isOnline = otherUser?.lastActive &&
     (new Date() - (otherUser.lastActive.toDate ? otherUser.lastActive.toDate() : new Date(otherUser.lastActive))) < 300000;
 
-  document.getElementById('chatRoomUser').innerHTML = `
-    <img src="${otherUser?.photoURL || 'default-avatar.png'}" alt="" onerror="this.src='default-avatar.png'" onclick="closeOverlayPage('chatRoomPage');viewProfile('${otherUid}')">
-    <div class="chat-room-user-info">
-      <div class="chat-room-user-name">${escapeHTML(otherUser?.displayName || 'User')} ${otherUser?.verified ? getVerifiedBadge() : ''}</div>
-      <div class="chat-room-user-status ${isOnline ? 'online' : ''}">${isOnline ? 'Online' : 'Offline'}</div>
-    </div>
-  `;
+  const roomUser = document.getElementById('chatRoomUser');
+  if (roomUser) {
+    roomUser.innerHTML = `
+      <img src="${otherUser?.photoURL || 'default-avatar.png'}" alt="" onerror="this.src='default-avatar.png'" onclick="closeOverlayPage('chatRoomPage');viewProfile('${otherUid}')">
+      <div class="chat-room-user-info">
+        <div class="chat-room-user-name">${escapeHTML(otherUser?.displayName || 'User')} ${otherUser?.verified ? getVerifiedBadge() : ''}</div>
+        <div class="chat-room-user-status ${isOnline ? 'online' : ''}">${isOnline ? 'Online' : 'Offline'}</div>
+      </div>
+    `;
+  }
 
   await db.collection('chatRooms').doc(chatRoomId).update({
     [`unread_${APP.currentUser.uid}`]: 0,
@@ -5541,12 +5540,15 @@ async function openChatRoom(chatRoomId, otherUid) {
   const roomDoc = await db.collection('chatRooms').doc(chatRoomId).get();
   const roomData = roomDoc.data();
 
+  const requestBar = document.getElementById('chatRequestBar');
+  const inputBar = document.getElementById('chatInputBar');
+
   if (!roomData.accepted && roomData.initiator !== APP.currentUser.uid) {
-    document.getElementById('chatRequestBar').style.display = 'block';
-    document.getElementById('chatInputBar').style.display = 'none';
+    if (requestBar) requestBar.style.display = 'block';
+    if (inputBar) inputBar.style.display = 'none';
   } else {
-    document.getElementById('chatRequestBar').style.display = 'none';
-    document.getElementById('chatInputBar').style.display = 'flex';
+    if (requestBar) requestBar.style.display = 'none';
+    if (inputBar) inputBar.style.display = 'flex';
   }
 
   loadChatMessages(chatRoomId);
@@ -5557,6 +5559,7 @@ function loadChatMessages(chatRoomId) {
   APP.chatListeners = [];
 
   const container = document.getElementById('chatMessages');
+  if (!container) return;
   container.innerHTML = '';
 
   const unsub = db.collection('messages')
@@ -5586,6 +5589,8 @@ function loadChatMessages(chatRoomId) {
           content = `<span class="animated-sticker ${anim}" style="font-size:70px;display:block;text-align:center">${msg.sticker}</span>`;
         } else if (msg.type === 'post_share') {
           content = `<div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);cursor:pointer;font-size:13px" onclick="openSinglePost('${msg.postId}')">📎 Shared a post<br><span style="color:var(--primary)">View post →</span></div>`;
+        } else if (msg.type === 'live_share') {
+          content = `<div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);cursor:pointer;font-size:13px" onclick="joinLiveById('${msg.liveId}')">🔴 Live Stream<br><span style="color:var(--primary)">Join live →</span></div>`;
         } else if (msg.type === 'story_reply') {
           content = `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Replied to your story</div>${escapeHTML(msg.text)}`;
         } else {
@@ -5609,6 +5614,19 @@ function loadChatMessages(chatRoomId) {
     });
 
   APP.chatListeners.push(unsub);
+}
+
+async function joinLiveById(liveId) {
+  try {
+    const doc = await db.collection('liveStreams').doc(liveId).get();
+    if (doc.exists && doc.data().isActive) {
+      joinLiveStream(doc.data().hostUid);
+    } else {
+      showToast('Live stream has ended', 'info');
+    }
+  } catch {
+    showToast('Failed to join live', 'error');
+  }
 }
 
 async function sendMessage() {
@@ -5668,8 +5686,10 @@ async function acceptMessageRequest() {
   if (!APP.currentChatRoom) return;
   try {
     await db.collection('chatRooms').doc(APP.currentChatRoom).update({ accepted: true });
-    document.getElementById('chatRequestBar').style.display = 'none';
-    document.getElementById('chatInputBar').style.display = 'flex';
+    const bar = document.getElementById('chatRequestBar');
+    const input = document.getElementById('chatInputBar');
+    if (bar) bar.style.display = 'none';
+    if (input) input.style.display = 'flex';
     showToast('Message request accepted', 'success');
   } catch (err) {
     showToast('Failed to accept', 'error');
@@ -5739,9 +5759,10 @@ function openStickerPicker() {
 
 function switchStickerPack(pack, btn) {
   document.querySelectorAll('.sticker-pack-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
 
   const grid = document.getElementById('stickerGrid');
+  if (!grid) return;
   grid.innerHTML = '';
   (STICKER_PACKS[pack] || []).forEach(s => {
     grid.innerHTML += `<div class="sticker-item" onclick="sendSticker('${s.emoji}','${s.anim}')"><span class="animated-sticker ${s.anim}" style="font-size:36px">${s.emoji}</span></div>`;
@@ -5843,8 +5864,10 @@ function renderSettings() {
   if (!u) return;
 
   const notifSettings = u.notifSettings || {};
+  const container = document.getElementById('settingsContent');
+  if (!container) return;
 
-  document.getElementById('settingsContent').innerHTML = `
+  container.innerHTML = `
     <div class="settings-section">
       <div class="settings-section-title">Account</div>
       <div class="settings-item" onclick="openEditProfile()">
@@ -5999,7 +6022,8 @@ function openBlockedUsers() {
         </div>
       `;
     }
-    document.getElementById('blockedUsersList').innerHTML = html;
+    const list = document.getElementById('blockedUsersList');
+    if (list) list.innerHTML = html;
   })();
 }
 
@@ -6023,13 +6047,16 @@ console.log('Vidr Part 6 loaded: Profile, Edit Profile, Chat, Settings');
 // Post Creation, Wallet (Stripe), Withdrawal
 // ==========================================
 
-// ==================== POST CREATION ====================
+// ==================== POST CREATION - VIDEO ====================
 
 function openCreateVideo() {
   navigateTo('create');
 
   const container = document.getElementById('createPage');
-  container.querySelector('.create-options').style.display = 'none';
+  if (!container) return;
+  
+  const options = container.querySelector('.create-options');
+  if (options) options.style.display = 'none';
 
   let formEl = document.getElementById('createVideoForm');
   if (formEl) formEl.remove();
@@ -6116,6 +6143,8 @@ async function handleVideoSelect(event) {
 async function generateVideoThumbnails(file) {
   const section = document.getElementById('videoThumbnailSection');
   const container = document.getElementById('thumbnailOptions');
+  if (!section || !container) return;
+  
   section.style.display = 'block';
   container.innerHTML = '<div class="loading-spinner small"></div>';
 
@@ -6174,7 +6203,7 @@ async function publishVideoPost() {
   const progressFill = document.getElementById('videoProgressFill');
   const progressText = document.getElementById('videoProgressText');
 
-  progressArea.style.display = 'block';
+  if (progressArea) progressArea.style.display = 'block';
   document.getElementById('postVideoBtn').disabled = true;
 
   try {
@@ -6184,8 +6213,8 @@ async function publishVideoPost() {
 
     uploadTask.on('state_changed', (snapshot) => {
       const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-      progressFill.style.width = percent + '%';
-      progressText.textContent = `Uploading... ${percent}%`;
+      if (progressFill) progressFill.style.width = percent + '%';
+      if (progressText) progressText.textContent = `Uploading... ${percent}%`;
     });
 
     await uploadTask;
@@ -6199,7 +6228,7 @@ async function publishVideoPost() {
       thumbURL = await thumbRef.getDownloadURL();
     }
 
-    progressText.textContent = 'Publishing...';
+    if (progressText) progressText.textContent = 'Publishing...';
 
     await db.collection('posts').add({
       uid: APP.currentUser.uid,
@@ -6244,11 +6273,16 @@ async function publishVideoPost() {
   }
 }
 
+// ==================== POST CREATION - PHOTO ====================
+
 function openCreatePhoto() {
   navigateTo('create');
 
   const container = document.getElementById('createPage');
-  container.querySelector('.create-options').style.display = 'none';
+  if (!container) return;
+  
+  const options = container.querySelector('.create-options');
+  if (options) options.style.display = 'none';
 
   let formEl = document.getElementById('createPhotoForm');
   if (formEl) formEl.remove();
@@ -6317,6 +6351,8 @@ function handlePhotoSelect(event) {
 
 function renderPhotoGrid() {
   const grid = document.getElementById('photoGrid');
+  if (!grid) return;
+  
   let html = '';
 
   selectedPhotoFiles.forEach((file, i) => {
@@ -6353,15 +6389,15 @@ async function publishPhotoPost() {
   const progressFill = document.getElementById('photoProgressFill');
   const progressText = document.getElementById('photoProgressText');
 
-  progressArea.style.display = 'block';
+  if (progressArea) progressArea.style.display = 'block';
   document.getElementById('postPhotoBtn').disabled = true;
 
   try {
     const mediaURLs = [];
 
     for (let i = 0; i < selectedPhotoFiles.length; i++) {
-      progressText.textContent = `Uploading ${i + 1}/${selectedPhotoFiles.length}...`;
-      progressFill.style.width = ((i + 1) / selectedPhotoFiles.length * 100) + '%';
+      if (progressText) progressText.textContent = `Uploading ${i + 1}/${selectedPhotoFiles.length}...`;
+      if (progressFill) progressFill.style.width = ((i + 1) / selectedPhotoFiles.length * 100) + '%';
 
       const compressed = await compressImage(selectedPhotoFiles[i], 1080, 0.85);
       const path = `posts/${APP.currentUser.uid}/${Date.now()}_${i}.jpg`;
@@ -6371,7 +6407,7 @@ async function publishPhotoPost() {
       mediaURLs.push(url);
     }
 
-    progressText.textContent = 'Publishing...';
+    if (progressText) progressText.textContent = 'Publishing...';
 
     await db.collection('posts').add({
       uid: APP.currentUser.uid,
@@ -6412,11 +6448,16 @@ async function publishPhotoPost() {
   }
 }
 
+// ==================== POST CREATION - TEXT ====================
+
 function openCreateText() {
   navigateTo('create');
 
   const container = document.getElementById('createPage');
-  container.querySelector('.create-options').style.display = 'none';
+  if (!container) return;
+  
+  const options = container.querySelector('.create-options');
+  if (options) options.style.display = 'none';
 
   let formEl = document.getElementById('createTextForm');
   if (formEl) formEl.remove();
@@ -6460,7 +6501,8 @@ let selectedTextBg = 0;
 
 function selectTextBg(index) {
   selectedTextBg = index;
-  document.getElementById('textPostPreview').style.background = TEXT_BG_COLORS[index];
+  const preview = document.getElementById('textPostPreview');
+  if (preview) preview.style.background = TEXT_BG_COLORS[index];
   document.querySelectorAll('#textBgOptions .text-bg-option').forEach((el, i) => {
     el.classList.toggle('selected', i === index);
   });
@@ -6543,7 +6585,10 @@ function renderWallet() {
   const u = APP.currentUserData;
   if (!u) return;
 
-  document.getElementById('walletContent').innerHTML = `
+  const container = document.getElementById('walletContent');
+  if (!container) return;
+
+  container.innerHTML = `
     <div class="wallet-balance-card">
       <div class="wallet-balances">
         <div class="wallet-balance-item">
@@ -6616,7 +6661,7 @@ function renderWallet() {
 
 function showBuyGold() {
   const walletContent = document.getElementById('walletContent');
-  walletContent.scrollTo({ top: walletContent.scrollHeight, behavior: 'smooth' });
+  if (walletContent) walletContent.scrollTo({ top: walletContent.scrollHeight, behavior: 'smooth' });
 }
 
 async function purchaseGoldPackage(packageId) {
@@ -6679,20 +6724,23 @@ function openStripePaymentModal(clientSecret, amount, description, type, package
   currentStripePaymentType = type;
   currentStripePackageId = packageId;
 
-  document.getElementById('stripeAmountDisplay').innerHTML = `
-    <div style="font-size:14px;color:var(--text-tertiary);font-weight:400;margin-bottom:4px">${description}</div>
-    $${(amount / 100).toFixed(2)}
-  `;
+  const amountDisplay = document.getElementById('stripeAmountDisplay');
+  if (amountDisplay) {
+    amountDisplay.innerHTML = `
+      <div style="font-size:14px;color:var(--text-tertiary);font-weight:400;margin-bottom:4px">${description}</div>
+      $${(amount / 100).toFixed(2)}
+    `;
+  }
 
   const modal = document.getElementById('stripePaymentModal');
-  modal.style.display = 'flex';
+  if (modal) modal.style.display = 'flex';
 
   const appearance = {
     theme: APP.darkMode ? 'night' : 'stripe',
     variables: {
-      colorPrimary: '#e91e8c',
-      colorBackground: APP.darkMode ? '#1a1a35' : '#ffffff',
-      colorText: APP.darkMode ? '#ffffff' : '#1a1033',
+      colorPrimary: '#ff6bb5',
+      colorBackground: APP.darkMode ? '#251f36' : '#ffffff',
+      colorText: APP.darkMode ? '#f5f0ff' : '#2d1b4e',
       colorDanger: '#ef4444',
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
       borderRadius: '8px',
@@ -6704,19 +6752,23 @@ function openStripePaymentModal(clientSecret, amount, description, type, package
   stripePaymentElement.mount('#stripePaymentElement');
 
   const form = document.getElementById('stripePaymentForm');
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    await submitStripePayment(clientSecret);
-  };
+  if (form) {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      await submitStripePayment(clientSecret);
+    };
+  }
 }
 
 async function submitStripePayment(clientSecret) {
   const submitBtn = document.getElementById('stripeSubmitBtn');
   const errorEl = document.getElementById('stripePaymentError');
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Processing...';
-  errorEl.textContent = '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+  }
+  if (errorEl) errorEl.textContent = '';
 
   try {
     const { error, paymentIntent } = await stripe.confirmPayment({
@@ -6728,9 +6780,11 @@ async function submitStripePayment(clientSecret) {
     });
 
     if (error) {
-      errorEl.textContent = error.message;
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Pay Now';
+      if (errorEl) errorEl.textContent = error.message;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Pay Now';
+      }
       return;
     }
 
@@ -6741,22 +6795,24 @@ async function submitStripePayment(clientSecret) {
 
       setTimeout(async () => {
         await loadUserData();
-        if (document.getElementById('walletPage').classList.contains('active')) {
+        if (document.getElementById('walletPage')?.classList.contains('active')) {
           renderWallet();
         }
       }, 3000);
     }
   } catch (err) {
     console.error('Payment error:', err);
-    errorEl.textContent = 'Payment failed. Please try again.';
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Pay Now';
+    if (errorEl) errorEl.textContent = 'Payment failed. Please try again.';
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Pay Now';
+    }
   }
 }
 
 function closeStripeModal() {
   const modal = document.getElementById('stripePaymentModal');
-  modal.style.display = 'none';
+  if (modal) modal.style.display = 'none';
 
   if (stripePaymentElement) {
     stripePaymentElement.destroy();
@@ -6766,7 +6822,7 @@ function closeStripeModal() {
   currentStripePaymentType = null;
 }
 
-// ==================== VERIFIED SUBSCRIPTION (Stripe) ====================
+// ==================== VERIFIED SUBSCRIPTION ====================
 
 async function subscribeVerified() {
   openCenterModal(`
@@ -6811,7 +6867,7 @@ async function confirmVerifiedSubscription() {
   }
 }
 
-// ==================== WITHDRAWAL (Stripe Connect) ====================
+// ==================== WITHDRAWAL ====================
 
 function showWithdraw() {
   const u = APP.currentUserData;
@@ -6851,24 +6907,27 @@ function showWithdraw() {
     </div>
   `);
 
-  document.getElementById('withdrawAmount')?.addEventListener('input', (e) => {
-    const amount = parseInt(e.target.value) || 0;
-    const calcDiv = document.getElementById('withdrawAmountCalc');
-    const payoutEl = document.getElementById('withdrawPayout');
-    const infoEl = document.getElementById('withdrawInfo');
+  const withdrawAmount = document.getElementById('withdrawAmount');
+  if (withdrawAmount) {
+    withdrawAmount.addEventListener('input', (e) => {
+      const amount = parseInt(e.target.value) || 0;
+      const calcDiv = document.getElementById('withdrawAmountCalc');
+      const payoutEl = document.getElementById('withdrawPayout');
+      const infoEl = document.getElementById('withdrawInfo');
 
-    if (amount >= MIN_WITHDRAWAL) {
-      const usd = amount / 100;
-      const fee = usd * WITHDRAWAL_FEE;
-      const payout = usd - fee;
-      calcDiv.style.display = 'block';
-      payoutEl.textContent = '$' + payout.toFixed(2);
-      infoEl.textContent = `Fee: $${fee.toFixed(2)} (${WITHDRAWAL_FEE * 100}%)`;
-    } else {
-      calcDiv.style.display = 'none';
-      infoEl.textContent = `Minimum: 🪙${formatNumber(MIN_WITHDRAWAL)}`;
-    }
-  });
+      if (amount >= MIN_WITHDRAWAL) {
+        const usd = amount / 100;
+        const fee = usd * WITHDRAWAL_FEE;
+        const payout = usd - fee;
+        if (calcDiv) calcDiv.style.display = 'block';
+        if (payoutEl) payoutEl.textContent = '$' + payout.toFixed(2);
+        if (infoEl) infoEl.textContent = `Fee: $${fee.toFixed(2)} (${WITHDRAWAL_FEE * 100}%)`;
+      } else {
+        if (calcDiv) calcDiv.style.display = 'none';
+        if (infoEl) infoEl.textContent = `Minimum: 🪙${formatNumber(MIN_WITHDRAWAL)}`;
+      }
+    });
+  }
 }
 
 async function connectStripeAccount() {
@@ -6936,8 +6995,11 @@ async function showTransactionHistory() {
       .limit(30)
       .get();
 
+    const container = document.getElementById('transHistoryList');
+    if (!container) return;
+
     if (snap.empty) {
-      document.getElementById('transHistoryList').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">No transactions yet</p>';
+      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">No transactions yet</p>';
       return;
     }
 
@@ -6971,9 +7033,10 @@ async function showTransactionHistory() {
     });
     html += '</div>';
 
-    document.getElementById('transHistoryList').innerHTML = html;
+    container.innerHTML = html;
   } catch (err) {
-    document.getElementById('transHistoryList').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
+    const container = document.getElementById('transHistoryList');
+    if (container) container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
   }
 }
 
@@ -6992,20 +7055,20 @@ function openSpinWheel() {
 }
 
 const SPIN_SEGMENTS = [
-  { label: '⚡1', value: 1, type: 'free', color: '#e91e8c' },
-  { label: '⚡3', value: 3, type: 'free', color: '#7c3aed' },
-  { label: '⚡5', value: 5, type: 'free', color: '#3b82f6' },
-  { label: '⚡10', value: 10, type: 'free', color: '#10b981' },
-  { label: '⚡20', value: 20, type: 'free', color: '#f59e0b' },
-  { label: '⚡50', value: 50, type: 'free', color: '#ef4444' },
-  { label: '⚡100', value: 100, type: 'free', color: '#8b5cf6' },
-  { label: '⚡200', value: 200, type: 'free', color: '#ec4899' },
-  { label: '🎁 Gift', value: 0, type: 'gift', color: '#06b6d4' },
-  { label: 'Try Again', value: 0, type: 'retry', color: '#6b7280' },
-  { label: '⚡2', value: 2, type: 'free', color: '#d946ef' },
-  { label: '⚡8', value: 8, type: 'free', color: '#14b8a6' },
-  { label: '⚡15', value: 15, type: 'free', color: '#f97316' },
-  { label: '⚡30', value: 30, type: 'free', color: '#84cc16' },
+  { label: '⚡1', value: 1, type: 'free', color: '#ff6bb5' },
+  { label: '⚡3', value: 3, type: 'free', color: '#a78bfa' },
+  { label: '⚡5', value: 5, type: 'free', color: '#7dd3fc' },
+  { label: '⚡10', value: 10, type: 'free', color: '#86efac' },
+  { label: '⚡20', value: 20, type: 'free', color: '#fcd34d' },
+  { label: '⚡50', value: 50, type: 'free', color: '#fda4af' },
+  { label: '⚡100', value: 100, type: 'free', color: '#c084fc' },
+  { label: '⚡200', value: 200, type: 'free', color: '#f472b6' },
+  { label: '🎁 Gift', value: 0, type: 'gift', color: '#67e8f9' },
+  { label: 'Try Again', value: 0, type: 'retry', color: '#9ca3af' },
+  { label: '⚡2', value: 2, type: 'free', color: '#f9a8d4' },
+  { label: '⚡8', value: 8, type: 'free', color: '#5eead4' },
+  { label: '⚡15', value: 15, type: 'free', color: '#fdba74' },
+  { label: '⚡30', value: 30, type: 'free', color: '#bef264' },
 ];
 
 const SPIN_WEIGHTS = [20, 15, 14, 12, 8, 3, 1, 0.5, 2, 10, 18, 13, 10, 5];
@@ -7013,8 +7076,10 @@ const SPIN_WEIGHTS = [20, 15, 14, 12, 8, 3, 1, 0.5, 2, 10, 18, 13, 10, 5];
 function renderSpinWheel() {
   const adsNeeded = 3;
   const adsWatched = APP.spinAdsWatched || 0;
+  const container = document.getElementById('spinContent');
+  if (!container) return;
 
-  document.getElementById('spinContent').innerHTML = `
+  container.innerHTML = `
     <p style="text-align:center;color:var(--text-tertiary);font-size:13px;margin-bottom:8px">Watch ${adsNeeded} ads to earn a spin!</p>
 
     <div class="spin-ad-progress">
@@ -7062,7 +7127,7 @@ function drawSpinWheel(rotation = 0) {
     ctx.closePath();
     ctx.fillStyle = seg.color;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -7077,7 +7142,7 @@ function drawSpinWheel(rotation = 0) {
 
   ctx.beginPath();
   ctx.arc(0, 0, 20, 0, Math.PI * 2);
-  ctx.fillStyle = '#1a1a35';
+  ctx.fillStyle = '#2d1b4e';
   ctx.fill();
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 2;
@@ -7106,7 +7171,7 @@ function spinWheel() {
   isSpinning = true;
 
   const btn = document.getElementById('spinBtn');
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
 
   const totalWeight = SPIN_WEIGHTS.reduce((a, b) => a + b, 0);
   let random = Math.random() * totalWeight;
@@ -7213,7 +7278,10 @@ function openGames() {
 }
 
 function renderGamesMenu() {
-  document.getElementById('gamesContent').innerHTML = `
+  const container = document.getElementById('gamesContent');
+  if (!container) return;
+  
+  container.innerHTML = `
     <p style="text-align:center;color:var(--text-tertiary);font-size:13px;margin-bottom:16px">Balance: ⚡${formatNumber(APP.currentUserData?.freeCoins || 0)}</p>
     <div class="games-grid">
       <div class="game-card" onclick="playGame('coinflip')"><div class="game-card-icon">🪙</div><div class="game-card-name">Coin Flip</div><div class="game-card-cost">⚡10</div></div>
@@ -7275,7 +7343,10 @@ async function gameWin(game, multiplier, bet) {
 }
 
 function renderCoinFlip(bet) {
-  document.getElementById('gamesContent').innerHTML = `
+  const container = document.getElementById('gamesContent');
+  if (!container) return;
+  
+  container.innerHTML = `
     <div class="game-area">
       <h3 style="margin-bottom:16px">🪙 Coin Flip</h3>
       <p style="color:var(--text-tertiary);margin-bottom:20px">Pick heads or tails!</p>
@@ -7316,7 +7387,10 @@ async function flipCoin(choice, bet) {
 }
 
 function renderDice(bet) {
-  document.getElementById('gamesContent').innerHTML = `
+  const container = document.getElementById('gamesContent');
+  if (!container) return;
+  
+  container.innerHTML = `
     <div class="game-area">
       <h3 style="margin-bottom:16px">🎲 Lucky Dice</h3>
       <p style="color:var(--text-tertiary);margin-bottom:20px">Roll 5 = 2x · Roll 6 = 3x</p>
@@ -7375,7 +7449,10 @@ function renderScratch(bet) {
   window._scratchRevealed = new Array(9).fill(false);
   window._scratchBet = bet;
 
-  document.getElementById('gamesContent').innerHTML = `
+  const container = document.getElementById('gamesContent');
+  if (!container) return;
+  
+  container.innerHTML = `
     <div class="game-area">
       <h3 style="margin-bottom:16px">🎫 Scratch Card</h3>
       <p style="color:var(--text-tertiary);margin-bottom:12px">Match 3 symbols to win 3x!</p>
@@ -7429,8 +7506,10 @@ async function checkScratchResult() {
 
 function renderSlots(bet) {
   window._slotBet = bet;
+  const container = document.getElementById('gamesContent');
+  if (!container) return;
 
-  document.getElementById('gamesContent').innerHTML = `
+  container.innerHTML = `
     <div class="game-area">
       <h3 style="margin-bottom:16px">🎰 Lucky Slots</h3>
       <p style="color:var(--text-tertiary);margin-bottom:12px">777 = 10x · 💎💎💎 = 7x · ⭐⭐⭐ = 5x · Any 3 = 2x</p>
@@ -7489,7 +7568,10 @@ async function spinSlots() {
 }
 
 function renderRPS(bet) {
-  document.getElementById('gamesContent').innerHTML = `
+  const container = document.getElementById('gamesContent');
+  if (!container) return;
+  
+  container.innerHTML = `
     <div class="game-area">
       <h3 style="margin-bottom:16px">✊ Rock Paper Scissors</h3>
       <p style="color:var(--text-tertiary);margin-bottom:20px">Win = 2x · Draw = Refund</p>
@@ -7545,7 +7627,10 @@ async function playRPS(choice, bet) {
 }
 
 function renderNumberGuess(bet) {
-  document.getElementById('gamesContent').innerHTML = `
+  const container = document.getElementById('gamesContent');
+  if (!container) return;
+  
+  container.innerHTML = `
     <div class="game-area">
       <h3 style="margin-bottom:16px">🔢 Number Guess</h3>
       <p style="color:var(--text-tertiary);margin-bottom:20px">Guess 1-10 · Correct = 8x!</p>
@@ -7584,6 +7669,8 @@ function openLeaderboard() {
 
 async function renderLeaderboard(tab = 'level') {
   const container = document.getElementById('leaderboardContent');
+  if (!container) return;
+  
   container.innerHTML = `
     <div class="leaderboard-tabs">
       <button class="leaderboard-tab ${tab === 'level' ? 'active' : ''}" onclick="renderLeaderboard('level')">🏆 Level</button>
@@ -7635,9 +7722,11 @@ async function renderLeaderboard(tab = 'level') {
       `;
     });
 
-    document.getElementById('leaderboardList').innerHTML = html || '<div class="empty-state"><p>No data yet</p></div>';
+    const list = document.getElementById('leaderboardList');
+    if (list) list.innerHTML = html || '<div class="empty-state"><p>No data yet</p></div>';
   } catch (err) {
-    document.getElementById('leaderboardList').innerHTML = '<div class="empty-state"><p>Failed to load</p></div>';
+    const list = document.getElementById('leaderboardList');
+    if (list) list.innerHTML = '<div class="empty-state"><p>Failed to load</p></div>';
   }
 }
 
@@ -7653,6 +7742,8 @@ let shopSearchQuery = '';
 
 async function renderShop() {
   const container = document.getElementById('shopContent');
+  if (!container) return;
+  
   container.innerHTML = `
     <div class="shop-categories">
       ${SHOP_CATEGORIES.map(c => `<button class="shop-category ${c === shopCategory ? 'active' : ''}" onclick="filterShop('${c}')">${c}</button>`).join('')}
@@ -7731,6 +7822,7 @@ async function loadShopProducts() {
 
 async function openProductDetail(productId) {
   const container = document.getElementById('shopContent');
+  if (!container) return;
   container.innerHTML = '<div class="loading-spinner small" style="margin:60px auto"></div>';
 
   try {
@@ -7827,6 +7919,7 @@ function addToCart(productId) {
 
 function updateCartBadge() {
   const badge = document.getElementById('cartBadge');
+  if (!badge) return;
   if (APP.cart.length > 0) {
     badge.style.display = 'flex';
     badge.textContent = APP.cart.length;
@@ -7872,11 +7965,14 @@ async function renderCart() {
     } catch {}
   }
 
-  document.getElementById('cartContent').innerHTML = `
-    ${items}
-    <div class="cart-total"><span>Total</span><span>$${total.toFixed(2)}</span></div>
-    <button class="cart-checkout-btn" onclick="closeBottomSheet();openCheckout()">Checkout</button>
-  `;
+  const cartContent = document.getElementById('cartContent');
+  if (cartContent) {
+    cartContent.innerHTML = `
+      ${items}
+      <div class="cart-total"><span>Total</span><span>$${total.toFixed(2)}</span></div>
+      <button class="cart-checkout-btn" onclick="closeBottomSheet();openCheckout()">Checkout</button>
+    `;
+  }
 }
 
 function updateCartQty(productId, delta) {
@@ -7899,7 +7995,7 @@ function quickBuy(productId) {
   buyNow(productId);
 }
 
-// ==================== CHECKOUT (Stripe) ====================
+// ==================== CHECKOUT ====================
 
 async function openCheckout() {
   let totalAmount = 0;
@@ -7925,7 +8021,7 @@ async function openCheckout() {
         <span>Total</span>
         <span>$${totalAmount.toFixed(2)}</span>
       </div>
-      <button class="checkout-pay-btn" onclick="processCheckout(${totalAmount})">Pay $${totalAmount.toFixed(2)} with Stripe</button>
+      <button class="checkout-pay-btn" onclick="processCheckout(${totalAmount})">Pay $${totalAmount.toFixed(2)}</button>
     </div>
   `);
 }
@@ -7942,41 +8038,6 @@ async function processCheckout(totalAmount) {
   closeBottomSheet();
   showLoading();
 
-  try {
-    // Store shipping info for after payment
-    window._pendingOrder = {
-      shipping: { name, address, city, zip, country },
-      items: APP.cart.slice(),
-      totalAmount,
-    };
-
-    initStripe();
-    if (!stripe) {
-      hideLoading();
-      showToast('Stripe not loaded', 'error');
-      return;
-    }
-
-    const functions = getFirebaseFunctions();
-    const createIntent = functions.httpsCallable('createShopPaymentIntent');
-    const result = await createIntent({
-      amount: Math.round(totalAmount * 100),
-      items: APP.cart,
-    });
-
-    hideLoading();
-    openStripePaymentModal(result.data.clientSecret, totalAmount * 100, `Order · ${APP.cart.length} items`, 'shop_order');
-  } catch (err) {
-    hideLoading();
-    console.error('Checkout error:', err);
-    // Fallback: complete order without Stripe (for development)
-    completeOrderFallback(totalAmount, name, address, city, zip, country);
-  }
-}
-
-// Fallback order completion (for development/testing without Stripe fully setup)
-async function completeOrderFallback(totalAmount, name, address, city, zip, country) {
-  showLoading();
   try {
     await new Promise(r => setTimeout(r, 1500));
 
@@ -8124,6 +8185,7 @@ function handleProductImages(event) {
 
 function renderProductImages() {
   const grid = document.getElementById('productImagesGrid');
+  if (!grid) return;
   let html = '';
   productImageFiles.forEach((f, i) => {
     const url = URL.createObjectURL(f);
@@ -8190,7 +8252,7 @@ console.log('Vidr Part 8 loaded: Spin, Games, Leaderboard, Shop, Checkout');
 
 // ==========================================
 // VIDR - app.js Part 9
-// Live Streaming, Gifts, Referral, Earn, Campaign
+// Live Streaming (Full-Screen), Live UI
 // ==========================================
 
 // ==================== GO LIVE SETUP ====================
@@ -8199,6 +8261,8 @@ function openGoLive() {
   openOverlayPage('liveStreamPage');
 
   const container = document.getElementById('liveStreamContent');
+  if (!container) return;
+  
   container.innerHTML = `
     <div class="live-setup">
       <h3 style="font-size:20px;font-weight:800;margin-bottom:8px">Go LIVE</h3>
@@ -8245,7 +8309,7 @@ function stopCameraPreview() {
   }
 }
 
-// ==================== LIVE STREAM ====================
+// ==================== START LIVE STREAM ====================
 
 async function startLiveStream() {
   const title = document.getElementById('liveTitle')?.value?.trim() || 'Live Stream';
@@ -8325,24 +8389,25 @@ function simulateBotViewers(liveId) {
   }, 5000);
 }
 
+// ==================== FULL-SCREEN LIVE HOST ====================
+
 function renderLiveStreamHost(liveId, title) {
   stopCameraPreview();
   const container = document.getElementById('liveStreamContent');
+  if (!container) return;
   
-  // Set body to full screen mode
   document.body.classList.add('live-fullscreen');
-  document.getElementById('bottomNav').style.display = 'none';
-  document.getElementById('bannerAd').style.display = 'none';
+  const bn = document.getElementById('bottomNav');
+  const ba = document.getElementById('bannerAd');
+  if (bn) bn.style.display = 'none';
+  if (ba) ba.style.display = 'none';
 
   container.innerHTML = `
     <div class="live-fullscreen-container">
-      <!-- Full-screen video background -->
       <video id="liveHostVideo" class="live-fullscreen-video" autoplay playsinline muted></video>
       
-      <!-- Gift Animation Overlay -->
       <div id="liveGiftAnimations" class="live-gift-animations"></div>
       
-      <!-- Top Bar -->
       <div class="live-top-overlay">
         <div class="live-host-badge">
           <img src="${APP.currentUserData?.photoURL || 'default-avatar.png'}" class="live-host-avatar-small">
@@ -8359,18 +8424,16 @@ function renderLiveStreamHost(liveId, title) {
         <button class="live-close-btn-new" onclick="endLiveStream()">✕</button>
       </div>
       
-      <!-- Battle Area -->
       <div id="liveBattleArea"></div>
       
-      <!-- Comments at Bottom -->
       <div class="live-comments-bottom" id="liveComments"></div>
       
-      <!-- Bottom Controls -->
       <div class="live-bottom-controls">
         <input class="live-comment-input-new" id="liveCommentInput" placeholder="Say something..." onkeypress="if(event.key==='Enter')sendLiveComment()">
         <button class="live-control-btn" onclick="switchLiveCamera()" title="Switch Camera">🔄</button>
         <button class="live-control-btn" onclick="toggleLiveMic()" title="Toggle Mic">🎤</button>
         <button class="live-control-btn" onclick="openLiveFilters()" title="Filters">✨</button>
+        <button class="live-control-btn" onclick="openLiveBattle()" title="Battle">⚔️</button>
         <button class="live-control-btn" onclick="shareLiveStreamToChat()" title="Share">📤</button>
       </div>
     </div>
@@ -8380,7 +8443,7 @@ function renderLiveStreamHost(liveId, title) {
   listenToLiveStream(liveId);
   trackLiveViewer(liveId, true);
 }
-  
+
 async function startLiveCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -8441,8 +8504,9 @@ function applyLiveFilter(filter) {
   video.style.filter = filters[filter] || 'none';
 }
 
+// ==================== LIVE STREAM LISTENERS ====================
+
 function listenToLiveStream(liveId) {
-  // Listen to main stream doc
   const unsub1 = db.collection('liveStreams').doc(liveId).onSnapshot(snap => {
     if (!snap.exists) return;
     const data = snap.data();
@@ -8472,7 +8536,6 @@ function listenToLiveStream(liveId) {
           const gift = change.doc.data();
           const giftTime = gift.createdAt?.toDate?.() || new Date();
           
-          // Only animate gifts from last 10 seconds (avoid old ones on refresh)
           if (Date.now() - giftTime.getTime() < 10000) {
             triggerGiftAnimation(gift);
           }
@@ -8489,10 +8552,9 @@ function renderLiveComments(comments) {
   
   container.innerHTML = comments.slice(-30).map(c => {
     if (c.isGift) {
-      // Special gift comment style
       return `
         <div class="live-comment live-gift-comment">
-          <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')">
+          <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')" onerror="this.src='default-avatar.png'">
           <div class="live-comment-content">
             <span class="live-comment-username" onclick="viewLiveCommenter('${c.uid}')">${escapeHTML(c.username)} ${c.verified ? '✓' : ''}</span>
             <span class="live-comment-gift-text">sent ${c.giftEmoji} ${c.giftName} x${c.giftCount || 1}</span>
@@ -8503,7 +8565,7 @@ function renderLiveComments(comments) {
     
     return `
       <div class="live-comment">
-        <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')">
+        <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')" onerror="this.src='default-avatar.png'">
         <div class="live-comment-content">
           <span class="live-comment-username" onclick="viewLiveCommenter('${c.uid}')">${escapeHTML(c.username)} ${c.verified ? '✓' : ''}</span>
           <span class="live-comment-text">${escapeHTML(c.text)}</span>
@@ -8515,548 +8577,36 @@ function renderLiveComments(comments) {
   container.scrollTop = container.scrollHeight;
 }
 
-function renderLiveComments(comments) {
-  const container = document.getElementById('liveComments');
-  if (!container) return;
-  
-  container.innerHTML = comments.slice(-30).map(c => {
-    if (c.isGift) {
-      // Special gift comment style
-      return `
-        <div class="live-comment live-gift-comment">
-          <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')">
-          <div class="live-comment-content">
-            <span class="live-comment-username" onclick="viewLiveCommenter('${c.uid}')">${escapeHTML(c.username)} ${c.verified ? '✓' : ''}</span>
-            <span class="live-comment-gift-text">sent ${c.giftEmoji} ${c.giftName} x${c.giftCount || 1}</span>
-          </div>
-        </div>
-      `;
-    }
-    
-    return `
-      <div class="live-comment">
-        <img src="${c.avatar || 'default-avatar.png'}" class="live-comment-avatar" onclick="viewLiveCommenter('${c.uid}')">
-        <div class="live-comment-content">
-          <span class="live-comment-username" onclick="viewLiveCommenter('${c.uid}')">${escapeHTML(c.username)} ${c.verified ? '✓' : ''}</span>
-          <span class="live-comment-text">${escapeHTML(c.text)}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-  
-  container.scrollTop = container.scrollHeight;
-}
-
-// ==================== GIFT ANIMATIONS ====================
-
-let giftAnimationQueue = [];
-let isProcessingGiftQueue = false;
-
-function triggerGiftAnimation(gift) {
-  giftAnimationQueue.push(gift);
-  if (!isProcessingGiftQueue) {
-    processGiftQueue();
-  }
-}
-
-async function processGiftQueue() {
-  if (giftAnimationQueue.length === 0) {
-    isProcessingGiftQueue = false;
-    return;
-  }
-  
-  isProcessingGiftQueue = true;
-  const gift = giftAnimationQueue.shift();
-  
-  // Show gift banner
-  showGiftBanner(gift);
-  
-  // Show gift animation based on tier
-  if (gift.giftTier === 'legendary') {
-    showLegendaryGiftAnimation(gift);
-    await new Promise(r => setTimeout(r, 4000));
-  } else if (gift.giftTier === 'epic') {
-    showEpicGiftAnimation(gift);
-    await new Promise(r => setTimeout(r, 3000));
-  } else if (gift.giftTier === 'rare') {
-    showRareGiftAnimation(gift);
-    await new Promise(r => setTimeout(r, 2000));
-  } else {
-    showBasicGiftAnimation(gift);
-    await new Promise(r => setTimeout(r, 1000));
-  }
-  
-  processGiftQueue();
-}
-
-// Gift banner (shows sender + gift info on left side)
-function showGiftBanner(gift) {
-  const container = document.getElementById('liveGiftAnimations');
-  if (!container) return;
-  
-  const banner = document.createElement('div');
-  banner.className = 'gift-banner';
-  banner.innerHTML = `
-    <div class="gift-banner-content">
-      <img src="${gift.avatar || 'default-avatar.png'}" class="gift-banner-avatar">
-      <div class="gift-banner-info">
-        <div class="gift-banner-name">${escapeHTML(gift.username)}</div>
-        <div class="gift-banner-action">sent ${escapeHTML(gift.giftName)}</div>
-      </div>
-      <div class="gift-banner-emoji">${gift.giftEmoji}</div>
-      <div class="gift-banner-count">x${gift.giftCount}</div>
-    </div>
-  `;
-  
-  container.appendChild(banner);
-  
-  // Animate in
-  requestAnimationFrame(() => {
-    banner.classList.add('show');
-  });
-  
-  // Remove after 4 seconds
-  setTimeout(() => {
-    banner.classList.add('hide');
-    setTimeout(() => banner.remove(), 500);
-  }, 4000);
-}
-
-// Basic gift (small, floats up)
-function showBasicGiftAnimation(gift) {
-  const container = document.getElementById('liveGiftAnimations');
-  if (!container) return;
-  
-  for (let i = 0; i < Math.min(gift.giftCount, 5); i++) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'floating-gift';
-      el.textContent = gift.giftEmoji;
-      el.style.left = (30 + Math.random() * 40) + '%';
-      el.style.bottom = '20%';
-      container.appendChild(el);
-      
-      setTimeout(() => el.remove(), 2500);
-    }, i * 200);
-  }
-}
-
-// Rare gift (medium, with sparkles)
-function showRareGiftAnimation(gift) {
-  const container = document.getElementById('liveGiftAnimations');
-  if (!container) return;
-  
-  // Big center emoji
-  const centerEl = document.createElement('div');
-  centerEl.className = 'gift-center-medium';
-  centerEl.innerHTML = `
-    <div class="gift-center-emoji">${gift.giftEmoji}</div>
-    ${gift.giftCount > 1 ? `<div class="gift-combo">x${gift.giftCount}</div>` : ''}
-  `;
-  container.appendChild(centerEl);
-  
-  // Add sparkles
-  for (let i = 0; i < 12; i++) {
-    setTimeout(() => {
-      const sparkle = document.createElement('div');
-      sparkle.className = 'gift-sparkle';
-      sparkle.textContent = '✨';
-      sparkle.style.left = (40 + Math.random() * 20) + '%';
-      sparkle.style.top = (30 + Math.random() * 40) + '%';
-      container.appendChild(sparkle);
-      setTimeout(() => sparkle.remove(), 1500);
-    }, i * 100);
-  }
-  
-  setTimeout(() => centerEl.remove(), 2500);
-}
-
-// Epic gift (large, with fireworks)
-function showEpicGiftAnimation(gift) {
-  const container = document.getElementById('liveGiftAnimations');
-  if (!container) return;
-  
-  // Full screen effect wrapper
-  const wrap = document.createElement('div');
-  wrap.className = 'gift-epic-wrap';
-  wrap.innerHTML = `
-    <div class="gift-epic-bg"></div>
-    <div class="gift-epic-center">
-      <div class="gift-epic-emoji">${gift.giftEmoji}</div>
-      <div class="gift-epic-name">${escapeHTML(gift.giftName)}</div>
-      ${gift.giftCount > 1 ? `<div class="gift-combo-epic">x${gift.giftCount}</div>` : ''}
-    </div>
-  `;
-  container.appendChild(wrap);
-  
-  // Firework particles
-  for (let i = 0; i < 30; i++) {
-    setTimeout(() => {
-      const particle = document.createElement('div');
-      particle.className = 'gift-firework';
-      const angle = (Math.PI * 2 * i) / 30;
-      const distance = 150 + Math.random() * 100;
-      particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
-      particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
-      particle.textContent = ['✨', '⭐', '💫', '🌟'][Math.floor(Math.random() * 4)];
-      wrap.appendChild(particle);
-    }, 500);
-  }
-  
-  setTimeout(() => wrap.remove(), 3500);
-}
-
-// Legendary gift (full screen takeover with confetti)
-function showLegendaryGiftAnimation(gift) {
-  const container = document.getElementById('liveGiftAnimations');
-  if (!container) return;
-  
-  const wrap = document.createElement('div');
-  wrap.className = 'gift-legendary-wrap';
-  wrap.innerHTML = `
-    <div class="gift-legendary-bg"></div>
-    <div class="gift-legendary-rays"></div>
-    <div class="gift-legendary-center">
-      <div class="gift-legendary-emoji">${gift.giftEmoji}</div>
-      <div class="gift-legendary-name">${escapeHTML(gift.giftName)}</div>
-      <div class="gift-legendary-sender">from ${escapeHTML(gift.username)}</div>
-      ${gift.giftCount > 1 ? `<div class="gift-combo-legendary">x${gift.giftCount}</div>` : ''}
-    </div>
-  `;
-  container.appendChild(wrap);
-  
-  // Launch confetti
-  launchConfetti();
-  
-  // Floating emojis
-  for (let i = 0; i < 20; i++) {
-    setTimeout(() => {
-      const emoji = document.createElement('div');
-      emoji.className = 'floating-gift-large';
-      emoji.textContent = gift.giftEmoji;
-      emoji.style.left = Math.random() * 100 + '%';
-      emoji.style.bottom = '-50px';
-      emoji.style.animationDuration = (2 + Math.random() * 2) + 's';
-      wrap.appendChild(emoji);
-    }, i * 150);
-  }
-  
-  setTimeout(() => wrap.remove(), 4500);
-}
-  
-// ==================== GIFT PANEL ====================
-
-function openLiveGiftPanel(liveId, hostUid) {
-  let html = `
-    <div class="gift-panel">
-      <div class="gift-tabs">
-        <button class="gift-tab active" onclick="showGiftTab('free',this)">⚡ Free</button>
-        <button class="gift-tab" onclick="showGiftTab('paid',this)">🪙 Paid</button>
-      </div>
-      <div class="gift-balance">
-        ⚡${formatNumber(APP.currentUserData?.freeCoins || 0)} · 🪙${formatNumber(APP.currentUserData?.goldCoins || 0)}
-      </div>
-      <div class="gift-grid" id="giftGrid">
-        ${FREE_GIFTS.map(g => `
-          <div class="gift-item" onclick="selectGift('${g.id}','free',${g.cost},this)" data-gift-id="${g.id}">
-            <div class="gift-emoji">${g.emoji}</div>
-            <div class="gift-name">${g.name}</div>
-            <div class="gift-cost">⚡${g.cost}</div>
-          </div>
-        `).join('')}
-      </div>
-      <button class="gift-send-btn" onclick="sendLiveGift('${liveId}','${hostUid}')">Send Gift</button>
-    </div>
-  `;
-  openBottomSheet(html);
-}
-
-let selectedGift = null;
-
-function selectGift(id, type, cost, el) {
-  document.querySelectorAll('.gift-item').forEach(g => g.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedGift = { id, type, cost };
-}
-
-function showGiftTab(type, btn) {
-  document.querySelectorAll('.gift-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-
-  const grid = document.getElementById('giftGrid');
-  const gifts = type === 'free' ? FREE_GIFTS : PAID_GIFTS;
-  const coinIcon = type === 'free' ? '⚡' : '🪙';
-
-  grid.innerHTML = gifts.map(g => `
-    <div class="gift-item" onclick="selectGift('${g.id}','${type}',${g.cost},this)">
-      <div class="gift-emoji">${g.emoji}</div>
-      <div class="gift-name">${g.name}</div>
-      <div class="gift-cost">${coinIcon}${g.cost}</div>
-    </div>
-  `).join('');
-}
-
-async function sendLiveGift(liveId, hostUid) {
-  if (!selectedGift) return showToast('Select a gift!', 'warning');
-
-  const { id, type, cost } = selectedGift;
-  const coinField = type === 'free' ? 'freeCoins' : 'goldCoins';
-  const balance = APP.currentUserData?.[coinField] || 0;
-
-  if (balance < cost) return showToast('Not enough coins!', 'error');
-
-  closeBottomSheet();
+async function sendLiveComment() {
+  const input = document.getElementById('liveCommentInput');
+  const text = input?.value?.trim();
+  if (!text || !APP.liveStreamId) return;
+  input.value = '';
 
   try {
-    // Deduct coins from sender
-    await db.collection('users').doc(APP.currentUser.uid).update({
-      [coinField]: firebase.firestore.FieldValue.increment(-cost),
-      totalGiftsSent: firebase.firestore.FieldValue.increment(1),
-    });
-    APP.currentUserData[coinField] -= cost;
-
-    // Payout to host
-    if (type === 'paid') {
-      const hostAmount = Math.floor(cost * (1 - PLATFORM_FEE));
-      await db.collection('users').doc(hostUid).update({
-        goldCoins: firebase.firestore.FieldValue.increment(hostAmount),
-        totalGiftsReceived: firebase.firestore.FieldValue.increment(1),
-        totalEarned: firebase.firestore.FieldValue.increment(hostAmount),
-      });
-
-      await db.collection('payouts').add({
-        type: 'gift_payout', userId: hostUid, amount: hostAmount,
-        giftId: id, fee: cost - hostAmount, status: 'completed',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-    } else {
-      await db.collection('users').doc(hostUid).update({
-        freeCoins: firebase.firestore.FieldValue.increment(cost),
-        totalGiftsReceived: firebase.firestore.FieldValue.increment(1),
-      });
-    }
-
-    // Get gift definition
-    const allGifts = [...FREE_GIFTS, ...PAID_GIFTS];
-    const giftDef = allGifts.find(g => g.id === id);
-
-    // Check for combo (same user sending same gift within 5 seconds)
-    const now = Date.now();
-    const comboKey = `${APP.currentUser.uid}_${id}`;
-    window._giftCombos = window._giftCombos || {};
-    
-    let comboCount = 1;
-    if (window._giftCombos[comboKey] && (now - window._giftCombos[comboKey].time) < 5000) {
-      comboCount = window._giftCombos[comboKey].count + 1;
-    }
-    window._giftCombos[comboKey] = { count: comboCount, time: now };
-
-    // Determine gift tier for animation
-    let tier = 'basic';
-    if (cost >= 5000) tier = 'legendary';
-    else if (cost >= 1000) tier = 'epic';
-    else if (cost >= 100) tier = 'rare';
-    else if (cost >= 20) tier = 'uncommon';
-
-    // Send gift event to live stream
-    await db.collection('liveStreams').doc(liveId).update({
+    await db.collection('liveStreams').doc(APP.liveStreamId).update({
       comments: firebase.firestore.FieldValue.arrayUnion({
         uid: APP.currentUser.uid,
         username: APP.currentUserData.displayName,
         avatar: APP.currentUserData.photoURL || '',
         verified: APP.currentUserData.verified || false,
-        text: `sent ${giftDef?.emoji || '🎁'} ${giftDef?.name || 'Gift'}`,
-        isGift: true,
-        giftEmoji: giftDef?.emoji || '🎁',
-        giftName: giftDef?.name || 'Gift',
-        giftCount: comboCount,
-        giftTier: tier,
-        giftCost: cost,
-        giftType: type,
-        time: now,
+        text,
+        isGift: false,
+        time: Date.now(),
       }),
     });
-
-    // Add to gift animation queue
-    await db.collection('liveStreams').doc(liveId)
-      .collection('giftEvents').add({
-        uid: APP.currentUser.uid,
-        username: APP.currentUserData.displayName,
-        avatar: APP.currentUserData.photoURL || '',
-        giftEmoji: giftDef?.emoji || '🎁',
-        giftName: giftDef?.name || 'Gift',
-        giftCount: comboCount,
-        giftTier: tier,
-        giftCost: cost,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-    // Battle score update
-    const liveDoc = await db.collection('liveStreams').doc(liveId).get();
-    if (liveDoc.exists && liveDoc.data().battleActive) {
-      await db.collection('liveStreams').doc(liveId).update({
-        'battleScore.host': firebase.firestore.FieldValue.increment(cost),
-      });
-    }
-
-    await incrementAchievement(APP.currentUser.uid, 'first_gift');
-
-    await db.collection('transactions').add({
-      uid: APP.currentUser.uid, type: 'gift_sent', amount: -cost, 
-      coinType: type === 'free' ? 'free' : 'gold',
-      description: `Gift: ${giftDef?.name}`, 
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    selectedGift = null;
-  } catch (err) {
-    console.error('Send gift error:', err);
-    showToast('Failed to send gift', 'error');
-  }
-}
+  } catch {}
 }
 
-function showGiftOverlay(emoji) {
-  const overlay = document.getElementById('liveGiftOverlay');
-  if (!overlay) return;
-  const el = document.createElement('div');
-  el.className = 'live-gift-effect';
-  el.textContent = emoji;
-  overlay.appendChild(el);
-  setTimeout(() => el.remove(), 2000);
+// Click username in live comments to view profile
+function viewLiveCommenter(uid) {
+  if (!uid) return;
+  loadProfile(uid, true);
 }
 
-async function endLiveStream() {
-  if (!APP.liveStreamId) return;
+// ==================== TRACK LIVE VIEWERS ====================
 
-  openCenterModal(`
-    <div class="modal-title">End Live?</div>
-    <p class="modal-text">Your live stream will end for all viewers.</p>
-    <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="closeCenterModal()">Keep Going</button>
-      <button class="modal-btn danger" onclick="confirmEndLive()">End Live</button>
-    </div>
-  `);
-}
-
-async function confirmEndLive() {
-  closeCenterModal();
-  try {
-    await db.collection('liveStreams').doc(APP.liveStreamId).update({ isActive: false });
-    const video = document.getElementById('liveHostVideo');
-    if (video && video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
-    APP.liveStreamId = null;
-    APP.isLiveHost = false;
-    closeOverlayPage('liveStreamPage');
-    showToast('Live stream ended', 'info');
-  } catch (err) {
-    showToast('Failed to end live', 'error');
-  }
-}
-
-async function joinLiveStream(hostUid) {
-  openOverlayPage('liveStreamPage');
-  document.body.classList.add('live-fullscreen');
-  document.getElementById('bottomNav').style.display = 'none';
-  document.getElementById('bannerAd').style.display = 'none';
-  
-  const container = document.getElementById('liveStreamContent');
-  container.innerHTML = '<div class="loading-spinner" style="margin:40vh auto"></div>';
-
-  try {
-    const snap = await db.collection('liveStreams')
-      .where('hostUid', '==', hostUid)
-      .where('isActive', '==', true)
-      .limit(1)
-      .get();
-
-    if (snap.empty) {
-      container.innerHTML = '<div class="empty-state" style="padding-top:40vh;color:#fff"><h3>Live has ended</h3></div>';
-      return;
-    }
-
-    const liveDoc = snap.docs[0];
-    const liveData = liveDoc.data();
-    APP.liveStreamId = liveDoc.id;
-    APP.isLiveHost = false;
-
-    // Track this viewer
-    await trackLiveViewer(liveDoc.id, false);
-
-    container.innerHTML = `
-      <div class="live-fullscreen-container">
-        <!-- Viewer sees the same video that host is streaming -->
-        <video id="liveViewerVideo" class="live-fullscreen-video" autoplay playsinline></video>
-        
-        <!-- Fallback background if video not available -->
-        <div class="live-viewer-bg" style="background:linear-gradient(135deg,#1a1a2e,#16213e);">
-          <div class="live-host-info-center">
-            <img src="${liveData.hostAvatar || 'default-avatar.png'}" class="live-host-avatar-large">
-            <div class="live-host-name-large">${escapeHTML(liveData.hostName)}</div>
-            <div class="live-host-title">${escapeHTML(liveData.title || 'Live Stream')}</div>
-          </div>
-        </div>
-
-        <!-- Gift Animation Overlay -->
-        <div id="liveGiftAnimations" class="live-gift-animations"></div>
-
-        <!-- Top Bar -->
-        <div class="live-top-overlay">
-          <div class="live-host-badge" onclick="closeOverlayPage('liveStreamPage');viewProfile('${hostUid}')" style="cursor:pointer">
-            <img src="${liveData.hostAvatar || 'default-avatar.png'}" class="live-host-avatar-small">
-            <div class="live-host-details">
-              <div class="live-host-name-small">${escapeHTML(liveData.hostName)} ${liveData.hostVerified ? '✓' : ''}</div>
-              <div class="live-viewer-count-small">👁 <span id="viewerCountNum">${liveData.viewerCount || 0}</span></div>
-            </div>
-          </div>
-          <button class="live-follow-quick" onclick="quickFollowHost('${hostUid}', this)">Follow</button>
-          <button class="live-close-btn-new" onclick="leaveLiveStream()">✕</button>
-        </div>
-
-        <div id="liveBattleArea"></div>
-        
-        <!-- Comments at Bottom -->
-        <div class="live-comments-bottom" id="liveComments"></div>
-
-        <!-- Bottom Controls -->
-        <div class="live-bottom-controls">
-          <input class="live-comment-input-new" id="liveCommentInput" placeholder="Say something..." onkeypress="if(event.key==='Enter')sendLiveComment()">
-          <button class="live-control-btn gift-btn" onclick="openLiveGiftPanel('${liveDoc.id}','${hostUid}')" title="Send Gift">🎁</button>
-          <button class="live-control-btn" onclick="shareLiveStreamToChat()" title="Share">📤</button>
-        </div>
-      </div>
-    `;
-
-    listenToLiveStream(liveDoc.id);
-    setupLiveVideoStream(hostUid);
-  } catch (err) {
-    console.error('Join live error:', err);
-    container.innerHTML = '<div class="empty-state"><h3>Failed to join</h3></div>';
-  }
-}
-
-async function leaveLiveStream() {
-  if (APP.liveStreamId && !APP.isLiveHost) {
-    try {
-      await db.collection('liveStreams').doc(APP.liveStreamId).update({
-        viewerCount: firebase.firestore.FieldValue.increment(-1),
-      });
-    } catch {}
-  }
-  APP.liveStreamId = null;
-  closeOverlayPage('liveStreamPage');
-}
-
-function shareLiveStream() {
-  const link = `https://vidr.click/?live=${APP.liveStreamId}`;
-  if (navigator.share) {
-    navigator.share({ title: 'Join my live!', url: link }).catch(() => {});
-  } else {
-    navigator.clipboard.writeText(link).then(() => showToast('Link copied!', 'success'));
-  }
-}
-
-  async function trackLiveViewer(liveId, isHost) {
+async function trackLiveViewer(liveId, isHost) {
   if (!APP.currentUser) return;
   
   try {
@@ -9071,12 +8621,6 @@ function shareLiveStream() {
       isHost: isHost,
       joinedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    
-    if (!isHost) {
-      await db.collection('liveStreams').doc(liveId).update({
-        viewerCount: firebase.firestore.FieldValue.increment(1),
-      });
-    }
   } catch (err) {
     console.error('Track viewer error:', err);
   }
@@ -9088,10 +8632,6 @@ async function removeLiveViewer(liveId) {
   try {
     await db.collection('liveStreams').doc(liveId)
       .collection('viewers').doc(APP.currentUser.uid).delete();
-    
-    await db.collection('liveStreams').doc(liveId).update({
-      viewerCount: firebase.firestore.FieldValue.increment(-1),
-    });
   } catch (err) {
     console.error('Remove viewer error:', err);
   }
@@ -9115,7 +8655,7 @@ async function showLiveViewers() {
     let html = '';
     snap.forEach(doc => {
       const v = doc.data();
-      if (v.isHost) return; // Don't show host
+      if (v.isHost) return;
       
       html += `
         <div class="viewer-list-item" onclick="closeBottomSheet();viewProfile('${v.uid}')">
@@ -9128,49 +8668,29 @@ async function showLiveViewers() {
       `;
     });
     
-    document.getElementById('liveViewersList').innerHTML = html || '<p style="text-align:center;color:var(--text-muted);padding:20px">No viewers yet</p>';
+    const list = document.getElementById('liveViewersList');
+    if (list) list.innerHTML = html || '<p style="text-align:center;color:var(--text-muted);padding:20px">No viewers yet</p>';
   } catch (err) {
-    document.getElementById('liveViewersList').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
+    const list = document.getElementById('liveViewersList');
+    if (list) list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
   }
 }
 
-// Quick follow from live stream
-async function quickFollowHost(hostUid, btn) {
-  if (APP.followingIds.has(hostUid)) {
-    await unfollowUser(hostUid);
-    APP.followingIds.delete(hostUid);
-    btn.textContent = 'Follow';
-    btn.classList.remove('following');
-  } else {
-    await followUser(hostUid);
-    APP.followingIds.add(hostUid);
-    btn.textContent = 'Following';
-    btn.classList.add('following');
-  }
+// ==================== END LIVE STREAM ====================
+
+async function endLiveStream() {
+  if (!APP.liveStreamId) return;
+
+  openCenterModal(`
+    <div class="modal-title">End Live?</div>
+    <p class="modal-text">Your live stream will end for all viewers.</p>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeCenterModal()">Keep Going</button>
+      <button class="modal-btn danger" onclick="confirmEndLive()">End Live</button>
+    </div>
+  `);
 }
 
-// Setup viewer to see host's stream (WebRTC placeholder - for actual streaming you need WebRTC/HLS)
-function setupLiveVideoStream(hostUid) {
-  // In production, connect via WebRTC/Agora/LiveKit here
-  // For now, viewers see the placeholder background
-  const video = document.getElementById('liveViewerVideo');
-  if (video) video.style.display = 'none'; // Hide until stream is available
-}
-
-// Leave live stream (updated)
-async function leaveLiveStream() {
-  if (APP.liveStreamId && !APP.isLiveHost) {
-    await removeLiveViewer(APP.liveStreamId);
-  }
-  
-  document.body.classList.remove('live-fullscreen');
-  document.getElementById('bottomNav').style.display = 'flex';
-  document.getElementById('bannerAd').style.display = 'flex';
-  APP.liveStreamId = null;
-  closeOverlayPage('liveStreamPage');
-}
-
-// Confirm End Live (updated)
 async function confirmEndLive() {
   closeCenterModal();
   try {
@@ -9179,8 +8699,10 @@ async function confirmEndLive() {
     if (video && video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
     
     document.body.classList.remove('live-fullscreen');
-    document.getElementById('bottomNav').style.display = 'flex';
-    document.getElementById('bannerAd').style.display = 'flex';
+    const bn = document.getElementById('bottomNav');
+    const ba = document.getElementById('bannerAd');
+    if (bn) bn.style.display = 'flex';
+    if (ba) ba.style.display = 'flex';
     
     APP.liveStreamId = null;
     APP.isLiveHost = false;
@@ -9191,7 +8713,126 @@ async function confirmEndLive() {
   }
 }
 
-// Share Live to Chat (for all users)
+// ==================== JOIN LIVE STREAM (VIEWER) ====================
+
+async function joinLiveStream(hostUid) {
+  openOverlayPage('liveStreamPage');
+  document.body.classList.add('live-fullscreen');
+  const bn = document.getElementById('bottomNav');
+  const ba = document.getElementById('bannerAd');
+  if (bn) bn.style.display = 'none';
+  if (ba) ba.style.display = 'none';
+  
+  const container = document.getElementById('liveStreamContent');
+  if (!container) return;
+  container.innerHTML = '<div class="loading-spinner" style="margin:40vh auto"></div>';
+
+  try {
+    const snap = await db.collection('liveStreams')
+      .where('hostUid', '==', hostUid)
+      .where('isActive', '==', true)
+      .limit(1)
+      .get();
+
+    if (snap.empty) {
+      container.innerHTML = '<div class="empty-state" style="padding-top:40vh;color:#fff"><h3>Live has ended</h3></div>';
+      return;
+    }
+
+    const liveDoc = snap.docs[0];
+    const liveData = liveDoc.data();
+    APP.liveStreamId = liveDoc.id;
+    APP.isLiveHost = false;
+
+    await trackLiveViewer(liveDoc.id, false);
+    
+    await db.collection('liveStreams').doc(liveDoc.id).update({
+      viewerCount: firebase.firestore.FieldValue.increment(1),
+    });
+
+    const isFollowing = APP.followingIds.has(hostUid);
+
+    container.innerHTML = `
+      <div class="live-fullscreen-container">
+        <video id="liveViewerVideo" class="live-fullscreen-video" autoplay playsinline style="display:none"></video>
+        
+        <div class="live-viewer-bg" style="background:linear-gradient(135deg,#1a1a2e,#16213e);">
+          <div class="live-host-info-center">
+            <img src="${liveData.hostAvatar || 'default-avatar.png'}" class="live-host-avatar-large" onerror="this.src='default-avatar.png'">
+            <div class="live-host-name-large">${escapeHTML(liveData.hostName)}</div>
+            <div class="live-host-title">${escapeHTML(liveData.title || 'Live Stream')}</div>
+          </div>
+        </div>
+
+        <div id="liveGiftAnimations" class="live-gift-animations"></div>
+
+        <div class="live-top-overlay">
+          <div class="live-host-badge" onclick="closeOverlayPage('liveStreamPage');viewProfile('${hostUid}')" style="cursor:pointer">
+            <img src="${liveData.hostAvatar || 'default-avatar.png'}" class="live-host-avatar-small" onerror="this.src='default-avatar.png'">
+            <div class="live-host-details">
+              <div class="live-host-name-small">${escapeHTML(liveData.hostName)} ${liveData.hostVerified ? '✓' : ''}</div>
+              <div class="live-viewer-count-small">👁 <span id="viewerCountNum">${liveData.viewerCount || 0}</span></div>
+            </div>
+          </div>
+          <button class="live-follow-quick ${isFollowing ? 'following' : ''}" onclick="quickFollowHost('${hostUid}', this)">
+            ${isFollowing ? 'Following' : 'Follow'}
+          </button>
+          <button class="live-close-btn-new" onclick="leaveLiveStream()">✕</button>
+        </div>
+
+        <div id="liveBattleArea"></div>
+        
+        <div class="live-comments-bottom" id="liveComments"></div>
+
+        <div class="live-bottom-controls">
+          <input class="live-comment-input-new" id="liveCommentInput" placeholder="Say something..." onkeypress="if(event.key==='Enter')sendLiveComment()">
+          <button class="live-control-btn gift-btn" onclick="openLiveGiftPanel('${liveDoc.id}','${hostUid}')" title="Send Gift">🎁</button>
+          <button class="live-control-btn" onclick="shareLiveStreamToChat()" title="Share">📤</button>
+        </div>
+      </div>
+    `;
+
+    listenToLiveStream(liveDoc.id);
+  } catch (err) {
+    console.error('Join live error:', err);
+    container.innerHTML = '<div class="empty-state" style="color:#fff"><h3>Failed to join</h3></div>';
+  }
+}
+
+async function quickFollowHost(hostUid, btn) {
+  if (APP.followingIds.has(hostUid)) {
+    await unfollowUser(hostUid);
+    btn.textContent = 'Follow';
+    btn.classList.remove('following');
+  } else {
+    await followUser(hostUid);
+    btn.textContent = 'Following';
+    btn.classList.add('following');
+  }
+}
+
+async function leaveLiveStream() {
+  if (APP.liveStreamId && !APP.isLiveHost) {
+    await removeLiveViewer(APP.liveStreamId);
+    try {
+      await db.collection('liveStreams').doc(APP.liveStreamId).update({
+        viewerCount: firebase.firestore.FieldValue.increment(-1),
+      });
+    } catch {}
+  }
+  
+  document.body.classList.remove('live-fullscreen');
+  const bn = document.getElementById('bottomNav');
+  const ba = document.getElementById('bannerAd');
+  if (bn) bn.style.display = 'flex';
+  if (ba) ba.style.display = 'flex';
+  
+  APP.liveStreamId = null;
+  closeOverlayPage('liveStreamPage');
+}
+
+// ==================== SHARE LIVE STREAM ====================
+
 function shareLiveStreamToChat() {
   if (!APP.liveStreamId) return;
   
@@ -9247,8 +8888,11 @@ function shareLiveToDM() {
 }
 
 async function searchUserForLiveShare(query, liveId) {
+  const container = document.getElementById('liveShareResults');
+  if (!container) return;
+  
   if (!query || query.length < 2) {
-    document.getElementById('liveShareResults').innerHTML = '';
+    container.innerHTML = '';
     return;
   }
   
@@ -9266,7 +8910,7 @@ async function searchUserForLiveShare(query, liveId) {
       
       html += `
         <div class="search-user-item" onclick="sendLiveToChat('${user.uid}', '${liveId}')">
-          <img src="${user.photoURL || 'default-avatar.png'}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+          <img src="${user.photoURL || 'default-avatar.png'}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover" onerror="this.src='default-avatar.png'">
           <div class="search-user-info">
             <div class="search-user-name">${escapeHTML(user.displayName)}</div>
             <div class="search-user-handle">@${escapeHTML(user.username || '')}</div>
@@ -9275,9 +8919,9 @@ async function searchUserForLiveShare(query, liveId) {
       `;
     });
     
-    document.getElementById('liveShareResults').innerHTML = html || '<p style="text-align:center;padding:16px;color:var(--text-muted)">No users found</p>';
+    container.innerHTML = html || '<p style="text-align:center;padding:16px;color:var(--text-muted)">No users found</p>';
   } catch (err) {
-    document.getElementById('liveShareResults').innerHTML = '<p style="text-align:center;padding:16px;color:var(--text-muted)">Search failed</p>';
+    container.innerHTML = '<p style="text-align:center;padding:16px;color:var(--text-muted)">Search failed</p>';
   }
 }
 
@@ -9298,13 +8942,9 @@ async function sendLiveToChat(uid, liveId) {
   showToast('Live shared!', 'success');
 }
 
-// Click on username in live comments to view profile
-function viewLiveCommenter(uid) {
-  const wasHost = APP.isLiveHost;
-  const liveId = APP.liveStreamId;
-  
-  // Don't leave the live, just show profile
-  loadProfile(uid, true);
+// Legacy alias
+function shareLiveStream() {
+  shareLiveStreamToChat();
 }
 
 // ==================== LIVE BATTLE ====================
@@ -9368,6 +9008,382 @@ function renderLiveBattle(data) {
   `;
 }
 
+console.log('Vidr Part 9 loaded: Live Streaming, Full-Screen UI');
+
+// ==========================================
+// VIDR - app.js Part 10
+// Gift Panel, Gift Sending, Animations
+// ==========================================
+
+// ==================== GIFT PANEL ====================
+
+let selectedGift = null;
+
+function openLiveGiftPanel(liveId, hostUid) {
+  let html = `
+    <div class="gift-panel">
+      <div class="gift-tabs">
+        <button class="gift-tab active" onclick="showGiftTab('free',this)">⚡ Free</button>
+        <button class="gift-tab" onclick="showGiftTab('paid',this)">🪙 Paid</button>
+      </div>
+      <div class="gift-balance">
+        ⚡${formatNumber(APP.currentUserData?.freeCoins || 0)} · 🪙${formatNumber(APP.currentUserData?.goldCoins || 0)}
+      </div>
+      <div class="gift-grid" id="giftGrid">
+        ${FREE_GIFTS.map(g => `
+          <div class="gift-item" onclick="selectGift('${g.id}','free',${g.cost},this)" data-gift-id="${g.id}">
+            <div class="gift-emoji">${g.emoji}</div>
+            <div class="gift-name">${g.name}</div>
+            <div class="gift-cost">⚡${g.cost}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="gift-send-btn" onclick="sendLiveGift('${liveId}','${hostUid}')">Send Gift</button>
+    </div>
+  `;
+  openBottomSheet(html);
+}
+
+function selectGift(id, type, cost, el) {
+  document.querySelectorAll('.gift-item').forEach(g => g.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedGift = { id, type, cost };
+}
+
+function showGiftTab(type, btn) {
+  document.querySelectorAll('.gift-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const grid = document.getElementById('giftGrid');
+  if (!grid) return;
+  
+  const gifts = type === 'free' ? FREE_GIFTS : PAID_GIFTS;
+  const coinIcon = type === 'free' ? '⚡' : '🪙';
+
+  grid.innerHTML = gifts.map(g => `
+    <div class="gift-item" onclick="selectGift('${g.id}','${type}',${g.cost},this)">
+      <div class="gift-emoji">${g.emoji}</div>
+      <div class="gift-name">${g.name}</div>
+      <div class="gift-cost">${coinIcon}${g.cost}</div>
+    </div>
+  `).join('');
+}
+
+// ==================== SEND GIFT ====================
+
+async function sendLiveGift(liveId, hostUid) {
+  if (!selectedGift) return showToast('Select a gift!', 'warning');
+
+  const { id, type, cost } = selectedGift;
+  const coinField = type === 'free' ? 'freeCoins' : 'goldCoins';
+  const balance = APP.currentUserData?.[coinField] || 0;
+
+  if (balance < cost) return showToast('Not enough coins!', 'error');
+
+  closeBottomSheet();
+
+  try {
+    // Deduct coins from sender
+    await db.collection('users').doc(APP.currentUser.uid).update({
+      [coinField]: firebase.firestore.FieldValue.increment(-cost),
+      totalGiftsSent: firebase.firestore.FieldValue.increment(1),
+    });
+    APP.currentUserData[coinField] -= cost;
+
+    // Payout to host
+    if (type === 'paid') {
+      const hostAmount = Math.floor(cost * (1 - PLATFORM_FEE));
+      await db.collection('users').doc(hostUid).update({
+        goldCoins: firebase.firestore.FieldValue.increment(hostAmount),
+        totalGiftsReceived: firebase.firestore.FieldValue.increment(1),
+        totalEarned: firebase.firestore.FieldValue.increment(hostAmount),
+      });
+
+      await db.collection('payouts').add({
+        type: 'gift_payout', userId: hostUid, amount: hostAmount,
+        giftId: id, fee: cost - hostAmount, status: 'completed',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    } else {
+      await db.collection('users').doc(hostUid).update({
+        freeCoins: firebase.firestore.FieldValue.increment(cost),
+        totalGiftsReceived: firebase.firestore.FieldValue.increment(1),
+      });
+    }
+
+    // Get gift definition
+    const allGifts = [...FREE_GIFTS, ...PAID_GIFTS];
+    const giftDef = allGifts.find(g => g.id === id);
+
+    // Check for combo (same user + same gift within 5 seconds)
+    const now = Date.now();
+    const comboKey = `${APP.currentUser.uid}_${id}`;
+    window._giftCombos = window._giftCombos || {};
+    
+    let comboCount = 1;
+    if (window._giftCombos[comboKey] && (now - window._giftCombos[comboKey].time) < 5000) {
+      comboCount = window._giftCombos[comboKey].count + 1;
+    }
+    window._giftCombos[comboKey] = { count: comboCount, time: now };
+
+    // Determine gift tier
+    let tier = 'basic';
+    if (cost >= 5000) tier = 'legendary';
+    else if (cost >= 1000) tier = 'epic';
+    else if (cost >= 100) tier = 'rare';
+    else if (cost >= 20) tier = 'uncommon';
+
+    // Send gift event as comment
+    await db.collection('liveStreams').doc(liveId).update({
+      comments: firebase.firestore.FieldValue.arrayUnion({
+        uid: APP.currentUser.uid,
+        username: APP.currentUserData.displayName,
+        avatar: APP.currentUserData.photoURL || '',
+        verified: APP.currentUserData.verified || false,
+        text: `sent ${giftDef?.emoji || '🎁'} ${giftDef?.name || 'Gift'}`,
+        isGift: true,
+        giftEmoji: giftDef?.emoji || '🎁',
+        giftName: giftDef?.name || 'Gift',
+        giftCount: comboCount,
+        giftTier: tier,
+        giftCost: cost,
+        giftType: type,
+        time: now,
+      }),
+    });
+
+    // Add to gift animation queue
+    await db.collection('liveStreams').doc(liveId)
+      .collection('giftEvents').add({
+        uid: APP.currentUser.uid,
+        username: APP.currentUserData.displayName,
+        avatar: APP.currentUserData.photoURL || '',
+        giftEmoji: giftDef?.emoji || '🎁',
+        giftName: giftDef?.name || 'Gift',
+        giftCount: comboCount,
+        giftTier: tier,
+        giftCost: cost,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+    // Battle score update
+    const liveDoc = await db.collection('liveStreams').doc(liveId).get();
+    if (liveDoc.exists && liveDoc.data().battleActive) {
+      await db.collection('liveStreams').doc(liveId).update({
+        'battleScore.host': firebase.firestore.FieldValue.increment(cost),
+      });
+    }
+
+    await incrementAchievement(APP.currentUser.uid, 'first_gift');
+
+    await db.collection('transactions').add({
+      uid: APP.currentUser.uid, type: 'gift_sent', amount: -cost, 
+      coinType: type === 'free' ? 'free' : 'gold',
+      description: `Gift: ${giftDef?.name}`, 
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    selectedGift = null;
+  } catch (err) {
+    console.error('Send gift error:', err);
+    showToast('Failed to send gift', 'error');
+  }
+}
+
+// ==================== GIFT ANIMATION ENGINE ====================
+
+let giftAnimationQueue = [];
+let isProcessingGiftQueue = false;
+
+function triggerGiftAnimation(gift) {
+  giftAnimationQueue.push(gift);
+  if (!isProcessingGiftQueue) {
+    processGiftQueue();
+  }
+}
+
+async function processGiftQueue() {
+  if (giftAnimationQueue.length === 0) {
+    isProcessingGiftQueue = false;
+    return;
+  }
+  
+  isProcessingGiftQueue = true;
+  const gift = giftAnimationQueue.shift();
+  
+  // Always show the banner
+  showGiftBanner(gift);
+  
+  // Show animation based on tier
+  if (gift.giftTier === 'legendary') {
+    showLegendaryGiftAnimation(gift);
+    await new Promise(r => setTimeout(r, 4000));
+  } else if (gift.giftTier === 'epic') {
+    showEpicGiftAnimation(gift);
+    await new Promise(r => setTimeout(r, 3000));
+  } else if (gift.giftTier === 'rare') {
+    showRareGiftAnimation(gift);
+    await new Promise(r => setTimeout(r, 2000));
+  } else {
+    showBasicGiftAnimation(gift);
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  
+  processGiftQueue();
+}
+
+// Gift banner (left side, TikTok style)
+function showGiftBanner(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  const banner = document.createElement('div');
+  banner.className = 'gift-banner';
+  banner.innerHTML = `
+    <div class="gift-banner-content">
+      <img src="${gift.avatar || 'default-avatar.png'}" class="gift-banner-avatar" onerror="this.src='default-avatar.png'">
+      <div class="gift-banner-info">
+        <div class="gift-banner-name">${escapeHTML(gift.username)}</div>
+        <div class="gift-banner-action">sent ${escapeHTML(gift.giftName)}</div>
+      </div>
+      <div class="gift-banner-emoji">${gift.giftEmoji}</div>
+      <div class="gift-banner-count">x${gift.giftCount}</div>
+    </div>
+  `;
+  
+  container.appendChild(banner);
+  
+  requestAnimationFrame(() => {
+    banner.classList.add('show');
+  });
+  
+  setTimeout(() => {
+    banner.classList.add('hide');
+    setTimeout(() => banner.remove(), 500);
+  }, 4000);
+}
+
+// BASIC gift animation (small floating)
+function showBasicGiftAnimation(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  const count = Math.min(gift.giftCount, 5);
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'floating-gift';
+      el.textContent = gift.giftEmoji;
+      el.style.left = (30 + Math.random() * 40) + '%';
+      el.style.bottom = '20%';
+      container.appendChild(el);
+      
+      setTimeout(() => el.remove(), 2500);
+    }, i * 200);
+  }
+}
+
+// RARE gift animation (medium with sparkles)
+function showRareGiftAnimation(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  const centerEl = document.createElement('div');
+  centerEl.className = 'gift-center-medium';
+  centerEl.innerHTML = `
+    <div class="gift-center-emoji">${gift.giftEmoji}</div>
+    ${gift.giftCount > 1 ? `<div class="gift-combo">x${gift.giftCount}</div>` : ''}
+  `;
+  container.appendChild(centerEl);
+  
+  // Add sparkles
+  for (let i = 0; i < 12; i++) {
+    setTimeout(() => {
+      const sparkle = document.createElement('div');
+      sparkle.className = 'gift-sparkle';
+      sparkle.textContent = '✨';
+      sparkle.style.left = (40 + Math.random() * 20) + '%';
+      sparkle.style.top = (30 + Math.random() * 40) + '%';
+      container.appendChild(sparkle);
+      setTimeout(() => sparkle.remove(), 1500);
+    }, i * 100);
+  }
+  
+  setTimeout(() => centerEl.remove(), 2500);
+}
+
+// EPIC gift animation (fireworks)
+function showEpicGiftAnimation(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  const wrap = document.createElement('div');
+  wrap.className = 'gift-epic-wrap';
+  wrap.innerHTML = `
+    <div class="gift-epic-bg"></div>
+    <div class="gift-epic-center">
+      <div class="gift-epic-emoji">${gift.giftEmoji}</div>
+      <div class="gift-epic-name">${escapeHTML(gift.giftName)}</div>
+      ${gift.giftCount > 1 ? `<div class="gift-combo-epic">x${gift.giftCount}</div>` : ''}
+    </div>
+  `;
+  container.appendChild(wrap);
+  
+  // Firework particles
+  for (let i = 0; i < 30; i++) {
+    setTimeout(() => {
+      const particle = document.createElement('div');
+      particle.className = 'gift-firework';
+      const angle = (Math.PI * 2 * i) / 30;
+      const distance = 150 + Math.random() * 100;
+      particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+      particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+      particle.textContent = ['✨', '⭐', '💫', '🌟'][Math.floor(Math.random() * 4)];
+      wrap.appendChild(particle);
+    }, 500);
+  }
+  
+  setTimeout(() => wrap.remove(), 3500);
+}
+
+// LEGENDARY gift animation (full-screen takeover)
+function showLegendaryGiftAnimation(gift) {
+  const container = document.getElementById('liveGiftAnimations');
+  if (!container) return;
+  
+  const wrap = document.createElement('div');
+  wrap.className = 'gift-legendary-wrap';
+  wrap.innerHTML = `
+    <div class="gift-legendary-bg"></div>
+    <div class="gift-legendary-rays"></div>
+    <div class="gift-legendary-center">
+      <div class="gift-legendary-emoji">${gift.giftEmoji}</div>
+      <div class="gift-legendary-name">${escapeHTML(gift.giftName)}</div>
+      <div class="gift-legendary-sender">from ${escapeHTML(gift.username)}</div>
+      ${gift.giftCount > 1 ? `<div class="gift-combo-legendary">x${gift.giftCount}</div>` : ''}
+    </div>
+  `;
+  container.appendChild(wrap);
+  
+  // Launch confetti
+  launchConfetti();
+  
+  // Floating emojis
+  for (let i = 0; i < 20; i++) {
+    setTimeout(() => {
+      const emoji = document.createElement('div');
+      emoji.className = 'floating-gift-large';
+      emoji.textContent = gift.giftEmoji;
+      emoji.style.left = Math.random() * 100 + '%';
+      emoji.style.bottom = '-50px';
+      emoji.style.animationDuration = (2 + Math.random() * 2) + 's';
+      wrap.appendChild(emoji);
+    }, i * 150);
+  }
+  
+  setTimeout(() => wrap.remove(), 4500);
+}
+
 // ==================== REFERRAL PAGE ====================
 
 function openReferral() {
@@ -9378,8 +9394,10 @@ function openReferral() {
 function renderReferral() {
   const u = APP.currentUserData;
   const link = `https://vidr.click/?ref=${APP.currentUser?.uid}`;
+  const container = document.getElementById('referralContent');
+  if (!container) return;
 
-  document.getElementById('referralContent').innerHTML = `
+  container.innerHTML = `
     <div class="referral-card">
       <div class="referral-icon">🎁</div>
       <div class="referral-title">Refer & Earn</div>
@@ -9421,7 +9439,9 @@ function renderReferral() {
 
 function copyReferralLink() {
   const input = document.getElementById('referralLink');
-  navigator.clipboard.writeText(input.value).then(() => showToast('Link copied! 🔗', 'success'));
+  if (input) {
+    navigator.clipboard.writeText(input.value).then(() => showToast('Link copied! 🔗', 'success'));
+  }
 }
 
 async function shareReferral() {
@@ -9455,7 +9475,10 @@ function renderEarnPage() {
     { icon: '🏆', title: 'Achievements', desc: 'Unlock achievements for XP and rare coins', reward: 'XP + 0.0000001% gold' },
   ];
 
-  document.getElementById('earnContent').innerHTML = earnMethods.map(m => `
+  const container = document.getElementById('earnContent');
+  if (!container) return;
+
+  container.innerHTML = earnMethods.map(m => `
     <div class="earn-item">
       <div class="earn-item-icon">${m.icon}</div>
       <div class="earn-item-text">
@@ -9482,7 +9505,10 @@ function renderCampaign() {
   const canWatch = now - lastAdWatchTime >= AD_COOLDOWN;
   const cooldownRemaining = canWatch ? 0 : Math.ceil((AD_COOLDOWN - (now - lastAdWatchTime)) / 1000);
 
-  document.getElementById('campaignContent').innerHTML = `
+  const container = document.getElementById('campaignContent');
+  if (!container) return;
+
+  container.innerHTML = `
     <div class="campaign-card">
       <div class="campaign-icon">📺</div>
       <div class="campaign-title">Watch & Earn</div>
@@ -9581,6 +9607,7 @@ function openPayoutPage() {
 
 async function renderPayoutPage() {
   const container = document.getElementById('payoutContent');
+  if (!container) return;
   container.innerHTML = '<div class="loading-spinner small" style="margin:40px auto"></div>';
 
   try {
@@ -9637,17 +9664,21 @@ async function renderPayoutPage() {
   }
 }
 
-console.log('Vidr Part 9 loaded: Live, Gifts, Referral, Earn, Campaign, Payout');
+console.log('Vidr Part 10 loaded: Gift System, Animations, Referral, Earn, Campaign');
 
 // ==========================================
-// VIDR - app.js Part 10 (FINAL)
-// Admin Panel, Bot Management, Final Init
+// VIDR - app.js Part 11
+// Admin Panel, User Management
 // ==========================================
 
 // ==================== ADMIN PANEL ====================
 
 function openAdmin() {
-  if (APP.currentUserData?.role !== 'admin' && APP.currentUserData?.role !== 'moderator') {
+  const isAdminUser = APP.currentUserData?.role === 'admin' || 
+                       APP.currentUserData?.role === 'moderator' ||
+                       APP.currentUser?.email === ADMIN_EMAIL;
+  
+  if (!isAdminUser) {
     return showToast('Access denied', 'error');
   }
   openOverlayPage('adminPage');
@@ -9656,10 +9687,10 @@ function openAdmin() {
 
 async function renderAdminPanel() {
   const container = document.getElementById('adminContent');
+  if (!container) return;
   container.innerHTML = '<div class="loading-spinner small" style="margin:60px auto"></div>';
 
   try {
-    // Check permissions first
     const isAdminUser = APP.currentUserData?.role === 'admin' || 
                        APP.currentUser?.email === ADMIN_EMAIL;
     
@@ -9674,7 +9705,6 @@ async function renderAdminPanel() {
       return;
     }
 
-    // Fetch stats with error handling
     let totalUsers = 0, activeUsers = 0, bannedUsers = 0, verifiedUsers = 0, botUsers = 0;
     let totalPosts = 0, totalOrders = 0, totalRevenue = 0;
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
@@ -9791,6 +9821,8 @@ async function renderAdminPanel() {
 
 const adminSearchUsers = debounce(async (query) => {
   const container = document.getElementById('adminUserResults');
+  if (!container) return;
+  
   if (!query || query.length < 2) {
     container.innerHTML = '';
     return;
@@ -9888,6 +9920,7 @@ async function openAdminUserActions(uid) {
       <div class="admin-action-btn primary" onclick="adminSetLevel('${uid}')">📊 Set Level</div>
       <div class="admin-action-btn primary" onclick="adminSetRole('${uid}')">👑 Set Role</div>
       <div class="admin-action-btn primary" onclick="adminGiveTitle('${uid}')">🏷️ Give Title</div>
+      <div class="admin-action-btn success" onclick="adminGiveAllTitles('${uid}')">🏆 Give ALL Titles</div>
       <div class="admin-action-btn primary" onclick="adminRemoveTitle('${uid}')">🗑️ Remove Title</div>
       <div class="admin-action-btn primary" onclick="adminGrantAchievement('${uid}')">🏆 Grant Achievement</div>
       <div class="admin-action-btn primary" onclick="closeBottomSheet();viewProfile('${uid}')">👁 View Profile</div>
@@ -10299,6 +10332,65 @@ async function giveCustomTitle(uid) {
   await confirmGiveTitle(uid, name, rarity);
 }
 
+// Give ALL 22 titles at once (including admin special)
+async function adminGiveAllTitles(uid) {
+  closeBottomSheet();
+  
+  openCenterModal(`
+    <div class="modal-title">🏆 Grant All Titles</div>
+    <p class="modal-text">This will give the user ALL 22 titles including special admin titles!</p>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmGiveAllTitles('${uid}')">Grant All!</button>
+    </div>
+  `);
+}
+
+async function confirmGiveAllTitles(uid) {
+  closeCenterModal();
+  showLoading();
+  
+  try {
+    const allTitles = [
+      { name: 'Newbie', rarity: 'common' },
+      { name: 'Explorer', rarity: 'common' },
+      { name: 'Rising Star', rarity: 'uncommon' },
+      { name: 'Trendsetter', rarity: 'uncommon' },
+      { name: 'Content King', rarity: 'rare' },
+      { name: 'Content Queen', rarity: 'rare' },
+      { name: 'Influencer', rarity: 'rare' },
+      { name: 'Diamond Creator', rarity: 'epic' },
+      { name: 'Elite Member', rarity: 'epic' },
+      { name: 'VIP Legend', rarity: 'epic' },
+      { name: 'Mythical Being', rarity: 'legendary' },
+      { name: 'Godlike', rarity: 'legendary' },
+      { name: 'The Chosen One', rarity: 'legendary' },
+      { name: 'Vidr OG', rarity: 'legendary' },
+      { name: 'Admin', rarity: 'legendary' },
+      { name: 'Founder', rarity: 'legendary' },
+      { name: 'Owner', rarity: 'legendary' },
+      { name: 'CEO', rarity: 'legendary' },
+      { name: 'The Boss', rarity: 'legendary' },
+      { name: 'Supreme', rarity: 'legendary' },
+      { name: 'Immortal', rarity: 'legendary' },
+      { name: 'Master', rarity: 'legendary' }
+    ];
+    
+    await db.collection('users').doc(uid).update({
+      titles: allTitles
+    });
+    
+    await logAdminAction('grant_all_titles', uid, 'All 22 titles granted');
+    clearUserCache(uid);
+    hideLoading();
+    launchConfetti();
+    showToast('✅ All 22 titles granted!', 'success');
+  } catch (err) {
+    hideLoading();
+    showToast('Failed: ' + err.message, 'error');
+  }
+}
+
 async function adminRemoveTitle(uid) {
   closeBottomSheet();
   const u = await getUserData(uid);
@@ -10446,8 +10538,11 @@ async function openAdminReports() {
       .limit(20)
       .get();
 
+    const list = document.getElementById('adminReportsList');
+    if (!list) return;
+
     if (snap.empty) {
-      document.getElementById('adminReportsList').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">No pending reports 🎉</p>';
+      list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">No pending reports 🎉</p>';
       return;
     }
 
@@ -10473,9 +10568,10 @@ async function openAdminReports() {
       `;
     }
 
-    document.getElementById('adminReportsList').innerHTML = html;
+    list.innerHTML = html;
   } catch (err) {
-    document.getElementById('adminReportsList').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
+    const list = document.getElementById('adminReportsList');
+    if (list) list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">Failed to load</p>';
   }
 }
 
@@ -10503,8 +10599,10 @@ async function openAdminShopStats() {
     });
 
     const platformFee = totalGMV * PLATFORM_FEE;
+    const container = document.getElementById('shopStatsContent');
+    if (!container) return;
 
-    document.getElementById('shopStatsContent').innerHTML = `
+    container.innerHTML = `
       <div style="text-align:left">
         <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light)">
           <span>Total Products</span><span style="font-weight:700">${totalProducts}</span>
@@ -10519,7 +10617,8 @@ async function openAdminShopStats() {
       <button class="modal-btn secondary" style="width:100%;margin-top:16px" onclick="closeCenterModal()">Close</button>
     `;
   } catch {
-    document.getElementById('shopStatsContent').innerHTML = '<p style="text-align:center;color:var(--text-muted)">Failed</p>';
+    const container = document.getElementById('shopStatsContent');
+    if (container) container.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Failed</p>';
   }
 }
 
@@ -10528,6 +10627,13 @@ function clearAppCacheAdmin() {
   Object.keys(userDataCache).forEach(k => delete userDataCache[k]);
   showToast('All caches cleared', 'success');
 }
+
+console.log('Vidr Part 11 loaded: Admin Panel, User Management');
+
+// ==========================================
+// VIDR - app.js Part 12 (FINAL)
+// Bot Management, Cleanup, URL Handling, Final Init
+// ==========================================
 
 // ==================== BOT MANAGEMENT ====================
 
@@ -10559,6 +10665,10 @@ function openAdminBots() {
         <div class="sheet-option-icon">📷</div>
         <div class="sheet-option-text"><div class="sheet-option-label">Add 30 Bot Image Posts</div></div>
       </div>
+      <div class="sheet-option danger" onclick="closeBottomSheet();deleteAllBotPosts()">
+        <div class="sheet-option-icon">🗑️</div>
+        <div class="sheet-option-text"><div class="sheet-option-label" style="color:var(--error)">Delete All Bot Posts</div></div>
+      </div>
     </div>
   `);
 }
@@ -10571,14 +10681,11 @@ async function createBots(count) {
   let failed = 0;
 
   try {
-    // Process in batches of 20 for reliability
     const batchSize = 20;
     const totalBatches = Math.ceil(count / batchSize);
 
     for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
       const batchCount = Math.min(batchSize, count - (batchNum * batchSize));
-      
-      // Create promises for parallel creation
       const promises = [];
       
       for (let i = 0; i < batchCount; i++) {
@@ -10594,7 +10701,6 @@ async function createBots(count) {
         }
       });
 
-      // Small delay between batches
       if (batchNum < totalBatches - 1) {
         await new Promise(r => setTimeout(r, 500));
       }
@@ -10679,7 +10785,6 @@ async function createSingleBot(index) {
 
   await db.collection('users').doc(botUid).set(botData);
 
-  // Try to reserve username (may fail if taken, that's ok)
   try {
     await db.collection('usernames').doc(username).set({ uid: botUid });
   } catch (e) {
@@ -10718,7 +10823,7 @@ async function addBotVideos() {
         uid: bot.uid,
         type: 'video',
         mediaURL: videoURL,
-        thumbnailURL: `https://picsum.photos/400/700?random=${Date.now()}_${i}`,
+        thumbnailURL: `https://picsum.photos/seed/${Date.now()}_${i}/400/700`,
         caption,
         captionOnMedia: false,
         visibility: 'public',
@@ -10790,11 +10895,10 @@ async function addBotImagePosts() {
       const imageCount = Math.floor(Math.random() * 3) + 1;
       const mediaURLs = [];
 
-     // Change from picsum.photos to unsplash source (more reliable)
-for (let j = 0; j < imageCount; j++) {
-  const imageSeed = Math.floor(Math.random() * 1000);
-  mediaURLs.push(`https://picsum.photos/seed/${imageSeed}${i}${j}/600/800`);
-}
+      for (let j = 0; j < imageCount; j++) {
+        const imageSeed = Math.floor(Math.random() * 10000);
+        mediaURLs.push(`https://picsum.photos/seed/${imageSeed}${i}${j}/600/800`);
+      }
 
       const postPromise = db.collection('posts').add({
         uid: bot.uid,
@@ -10844,6 +10948,40 @@ for (let j = 0; j < imageCount; j++) {
     showToast(`Error: ${err.message}`, 'warning');
   }
 }
+
+async function deleteAllBotPosts() {
+  openCenterModal(`
+    <div class="modal-title">🗑️ Delete All Bot Posts</div>
+    <p class="modal-text">This will delete ALL bot posts. This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+      <button class="modal-btn danger" onclick="confirmDeleteAllBotPosts()">Delete All</button>
+    </div>
+  `);
+}
+
+async function confirmDeleteAllBotPosts() {
+  closeCenterModal();
+  showLoading();
+  
+  try {
+    const snap = await db.collection('posts').where('isBot', '==', true).get();
+    const batch = db.batch();
+    snap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    
+    APP.feedPosts = [];
+    APP.feedLastDoc = null;
+    APP.feedEnded = false;
+    
+    hideLoading();
+    showToast(`✅ Deleted ${snap.size} bot posts`, 'success');
+  } catch (err) {
+    hideLoading();
+    showToast('Failed to delete', 'error');
+  }
+}
+
 // ==================== STORY CLEANUP ====================
 
 async function cleanupExpiredStories() {
@@ -10865,6 +11003,22 @@ async function cleanupExpiredStories() {
 }
 
 setInterval(cleanupExpiredStories, 3600000);
+
+// ==================== GIFT EVENTS CLEANUP ====================
+
+setInterval(async () => {
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const snap = await db.collectionGroup('giftEvents')
+      .where('createdAt', '<', oneHourAgo)
+      .limit(100)
+      .get();
+    
+    const batch = db.batch();
+    snap.forEach(doc => batch.delete(doc.ref));
+    if (!snap.empty) await batch.commit();
+  } catch {}
+}, 3600000);
 
 // ==================== URL PARAM HANDLING ====================
 
@@ -10921,13 +11075,13 @@ setInterval(cleanupExpiredStories, 3600000);
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (document.getElementById('storyViewer').style.display !== 'none') {
+    if (document.getElementById('storyViewer')?.style?.display !== 'none') {
       closeStoryViewer();
-    } else if (document.getElementById('stripePaymentModal').style.display !== 'none') {
+    } else if (document.getElementById('stripePaymentModal')?.style?.display !== 'none') {
       closeStripeModal();
-    } else if (document.getElementById('centerModal').style.display !== 'none') {
+    } else if (document.getElementById('centerModal')?.style?.display !== 'none') {
       closeCenterModal();
-    } else if (document.getElementById('bottomSheet').style.display !== 'none') {
+    } else if (document.getElementById('bottomSheet')?.style?.display !== 'none') {
       closeBottomSheet();
     }
   }
@@ -10960,7 +11114,8 @@ window.addEventListener('resize', debounce(() => {
 // ==================== FINAL LOG ====================
 
 console.log('====================================');
-console.log('  VIDR APP FULLY LOADED');
-console.log(`  Version: ${APP.version}`);
-console.log('  All 10 parts loaded successfully');
+console.log('  🎉 VIDR APP FULLY LOADED');
+console.log(`  📱 Version: ${APP.version}`);
+console.log('  ✅ All 12 parts loaded successfully');
+console.log('  🚀 Ready to launch!');
 console.log('====================================');
