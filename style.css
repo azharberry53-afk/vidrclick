@@ -6940,6 +6940,423 @@ body.live-fullscreen #storiesBar {
   padding-bottom: calc(var(--nav-height) + var(--banner-height) + env(safe-area-inset-bottom, 0px));
 }
 
+/* ==================== TIKTOK-STYLE FEED ==================== */
+#homePage {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  height: 100vh;
+  padding-bottom: 0 !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.feed-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.feed-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+  background: #000;
+  overflow: hidden;
+}
+
+/* Media takes full screen */
+.feed-media {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.feed-media img,
+.feed-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.feed-video-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.feed-video-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Header overlay on top */
+.feed-item-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.feed-item-header .feed-displayname,
+.feed-item-header .feed-time {
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.feed-avatar-wrap {
+  border: 2px solid #fff;
+  border-radius: 50%;
+  padding: 2px;
+  background: transparent;
+}
+
+.feed-follow-btn {
+  background: var(--gradient-primary);
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.feed-follow-btn.following {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+}
+
+.feed-more-btn {
+  color: #fff;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+
+/* Actions on RIGHT side (TikTok style) */
+.feed-actions {
+  position: absolute;
+  right: 12px;
+  bottom: 100px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.feed-action-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  transition: transform 0.2s;
+}
+
+.feed-action-btn:active {
+  transform: scale(0.9);
+}
+
+.feed-action-btn svg {
+  width: 32px;
+  height: 32px;
+  stroke: #fff;
+}
+
+.feed-action-btn.liked svg {
+  fill: #ff3040;
+  stroke: #ff3040;
+  animation: heartBeat 0.6s ease;
+}
+
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.feed-action-btn span {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.feed-action-spacer {
+  display: none;
+}
+
+/* Caption area on BOTTOM LEFT */
+.feed-caption-area {
+  position: absolute;
+  bottom: 20px;
+  left: 12px;
+  right: 90px;
+  z-index: 10;
+  color: #fff;
+  padding: 0;
+}
+
+.feed-caption {
+  color: #fff !important;
+  font-size: 14px;
+  line-height: 1.4;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  max-height: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.feed-view-count {
+  color: rgba(255,255,255,0.9) !important;
+  font-size: 11px;
+  margin-top: 4px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Video play overlay */
+.feed-video-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.feed-video-play.show {
+  opacity: 1;
+}
+
+.feed-video-play svg {
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+  opacity: 0.9;
+}
+
+/* Text posts fill screen */
+.feed-text-post {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  z-index: 1;
+}
+
+.feed-text-content {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  line-height: 1.4;
+  word-wrap: break-word;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Live badges */
+.feed-live-badge {
+  position: absolute;
+  top: 80px;
+  left: 12px;
+  z-index: 10;
+  background: #ff0050;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: livePulse 2s infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.feed-live-dot {
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  animation: dotBlink 1s infinite;
+}
+
+@keyframes dotBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Yellow bag position */
+.yellow-bag-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 460px;
+  z-index: 10;
+}
+
+/* Feed ad - inline between posts */
+.feed-ad {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-primary);
+  padding: 20px;
+}
+
+.feed-ad-label {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  z-index: 10;
+}
+
+.feed-ad-container,
+.feed-ad-placeholder {
+  width: 100%;
+  max-width: 400px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.feed-ad-placeholder {
+  padding: 40px 30px;
+  text-align: center;
+  color: #fff;
+  cursor: pointer;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+
+/* Loading indicator at bottom */
+.feed-loading {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 8px 16px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 20px;
+  color: #fff;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+  display: none;
+}
+
+.feed-loading.visible {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hide top header on home for full TikTok feel */
+#homePage.active ~ #topHeader {
+  background: transparent !important;
+  position: absolute;
+}
+
+/* Stories bar overlay */
+#storiesBar {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: transparent;
+  backdrop-filter: blur(10px);
+}
+
+/* Reposted indicator */
+.feed-repost-bar {
+  position: absolute;
+  top: 100px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(10px);
+}
+
+/* Bottom nav stays on top */
+#bottomNav {
+  z-index: 1000;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+#bottomNav .nav-item {
+  color: rgba(255,255,255,0.7);
+}
+
+#bottomNav .nav-item.active {
+  color: #fff;
+}
+
+/* Hide feed banner ad on home (already have overlays) */
+#homePage.active ~ #bannerAd {
+  display: none !important;
+}
+
 /* Print hide */
 @media print {
   .bottom-nav,
