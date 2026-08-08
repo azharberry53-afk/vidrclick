@@ -741,8 +741,11 @@ function openOverlayPage(pageId) {
   const topHeader = document.getElementById('topHeader');
   const storiesBar = document.getElementById('storiesBar');
 
-  // KEEP bottom nav visible for profile overlay
-  if (pageId === 'profilePage') {
+  // KEEP bottom nav visible for these pages
+  const keepBottomNav = ['profilePage', 'walletPage', 'shopPage', 'gamesPage', 
+                          'spinWheelPage', 'leaderboardPage', 'earnPage', 'campaignPage'];
+  
+  if (keepBottomNav.includes(pageId)) {
     if (bottomNav) bottomNav.style.display = 'flex';
     if (bannerAd) bannerAd.style.display = 'flex';
   } else {
@@ -763,7 +766,7 @@ function closeOverlayPage(pageId) {
     }, 300);
   }
 
-  // Special handling for profile overlay
+  // Cleanup profile back button
   if (pageId === 'profilePage') {
     removeProfileBackButton();
     APP.profileViewingId = APP.currentUser?.uid;
@@ -1737,33 +1740,36 @@ function showInterstitialAd() {
 
 function showRewardedAd(callback) {
   const useAdsterra = ADSTERRA_NATIVE_KEY && ADSTERRA_NATIVE_URL;
+  const modalId = 'rewardedAdIframe_' + Date.now();
   
   openCenterModal(`
     <div class="modal-title">📺 Watch Ad to Earn</div>
-    <div id="rewardedAdContainer" style="min-height:280px;background:var(--bg-tertiary);border-radius:var(--radius-md);margin:12px 0;padding:12px;overflow:hidden;display:flex;align-items:center;justify-content:center">
-      ${useAdsterra ? '' : `
-        <div style="text-align:center;color:var(--text-muted);font-size:13px">
-          <div style="font-size:48px;margin-bottom:12px">📺</div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:8px">Video Advertisement</div>
-          <div style="font-size:12px">Enjoy this brief message from our sponsor</div>
-          <div style="margin-top:16px">
-            <div class="loading-spinner small" style="margin:0 auto"></div>
-          </div>
-        </div>
-      `}
+    <div id="rewardedAdContainer" style="min-height:300px;background:#000;border-radius:var(--radius-md);margin:12px 0;overflow:hidden;position:relative">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex-direction:column;gap:8px" id="adPlaceholder">
+        <div style="font-size:48px">📺</div>
+        <div style="font-weight:600">Loading advertisement...</div>
+        <div class="loading-spinner small" style="margin-top:8px"></div>
+      </div>
     </div>
-    <p class="modal-text" id="rewardedAdCountdown">⏱️ Please wait <span id="adTimer">15</span> seconds...</p>
+    <p class="modal-text" id="rewardedAdCountdown" style="text-align:center;font-weight:600">
+      ⏱️ Please wait <span id="adTimer" style="color:var(--primary)">15</span> seconds...
+    </p>
     <div class="modal-actions">
       <button class="modal-btn secondary" onclick="cancelRewardedAd()">Cancel</button>
-      <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.5;cursor:not-allowed">Claim Reward</button>
+      <button class="modal-btn primary" id="claimRewardBtn" disabled style="opacity:0.4;cursor:not-allowed">Claim Reward</button>
     </div>
   `);
 
-  // Load Adsterra ad in iframe (if configured)
+  // Try to load Adsterra ad
   if (useAdsterra) {
     setTimeout(() => {
       loadRewardedAdIframe();
-    }, 100);
+    }, 200);
+  } else {
+    // Show placeholder ad content
+    setTimeout(() => {
+      showPlaceholderAd();
+    }, 500);
   }
 
   window._rewardedAdCallback = callback;
@@ -1799,14 +1805,17 @@ function showRewardedAd(callback) {
 
 function loadRewardedAdIframe() {
   const container = document.getElementById('rewardedAdContainer');
+  const placeholder = document.getElementById('adPlaceholder');
   if (!container) return;
   
   try {
     const iframe = document.createElement('iframe');
     iframe.style.width = '100%';
-    iframe.style.height = '280px';
+    iframe.style.height = '300px';
     iframe.style.border = 'none';
     iframe.style.display = 'block';
+    iframe.style.position = 'relative';
+    iframe.style.zIndex = '10';
     iframe.setAttribute('scrolling', 'no');
     iframe.setAttribute('frameborder', '0');
     
@@ -1814,13 +1823,14 @@ function loadRewardedAdIframe() {
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
         <style>
-          body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
-          #ad-wrap { width: 100%; min-height: 250px; display: flex; align-items: center; justify-content: center; }
+          body { margin:0; padding:0; background:#000; font-family:sans-serif; }
+          #ad { width:100%; min-height:280px; display:flex; align-items:center; justify-content:center; color:#fff; }
         </style>
       </head>
       <body>
-        <div id="ad-wrap">
+        <div id="ad">
           <script type="text/javascript">
             atOptions = {
               'key' : '${ADSTERRA_NATIVE_KEY}',
@@ -1836,15 +1846,40 @@ function loadRewardedAdIframe() {
       </html>
     `;
     
-    container.innerHTML = '';
     container.appendChild(iframe);
     
-    iframe.contentWindow.document.open();
-    iframe.contentWindow.document.write(iframeContent);
-    iframe.contentWindow.document.close();
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.document.open();
+        iframe.contentWindow.document.write(iframeContent);
+        iframe.contentWindow.document.close();
+        
+        // Hide placeholder once ad loads
+        if (placeholder) placeholder.style.display = 'none';
+      } catch (e) {
+        console.warn('Iframe error:', e);
+        showPlaceholderAd();
+      }
+    }, 100);
   } catch (err) {
-    console.warn('Rewarded ad load error:', err);
+    console.warn('Rewarded ad error:', err);
+    showPlaceholderAd();
   }
+}
+
+function showPlaceholderAd() {
+  const container = document.getElementById('rewardedAdContainer');
+  if (!container) return;
+  
+  const ad = PLACEHOLDER_ADS[Math.floor(Math.random() * PLACEHOLDER_ADS.length)];
+  container.innerHTML = `
+    <div style="width:100%;height:300px;background:${ad.gradient};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#fff;cursor:pointer" onclick="APP.adImpressions++">
+      <div style="font-size:64px;margin-bottom:12px">${ad.icon}</div>
+      <div style="font-size:22px;font-weight:800;margin-bottom:8px">${ad.title}</div>
+      <div style="font-size:14px;opacity:0.95;margin-bottom:20px;max-width:280px">${ad.desc}</div>
+      <button style="padding:12px 32px;background:#fff;color:#333;border:none;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2)">${ad.cta} →</button>
+    </div>
+  `;
 }
 
 function cancelRewardedAd() {
@@ -2840,40 +2875,109 @@ function renderTextMedia(post) {
 }
 
 function renderFeedAd(index) {
-  // Use Adsterra if configured
+  const uniqueId = `feedAd_${index}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  
+  // Beautiful placeholder that shows immediately
+  const ad = PLACEHOLDER_ADS[index % PLACEHOLDER_ADS.length];
+  const placeholderHTML = `
+    <div class="feed-ad-placeholder" style="background:${ad.gradient}" onclick="handleAdClick(${index})">
+      <div class="feed-ad-icon">${ad.icon}</div>
+      <div class="feed-ad-title">${ad.title}</div>
+      <div class="feed-ad-desc">${ad.desc}</div>
+      <button class="feed-ad-cta">${ad.cta} →</button>
+    </div>
+  `;
+  
+  // If Adsterra configured, try to load real ad in iframe
   if (ADSTERRA_NATIVE_KEY && ADSTERRA_NATIVE_URL) {
-    const uniqueId = `feedAd_${index}_${Date.now()}`;
-    
-    // Load ad after a small delay
     setTimeout(() => {
-      loadFeedAdScript(uniqueId, index);
-    }, 200 + (index * 100)); // Stagger ad loads
-    
-    return `
-      <div class="feed-ad" data-ad-index="${index}">
-        <div class="feed-ad-label">Sponsored</div>
-        <div class="feed-ad-container" id="${uniqueId}">
-          <div class="feed-ad-loading">📺 Loading ad...</div>
-        </div>
-      </div>
-    `;
+      loadAdsterraInIframe(uniqueId, index);
+    }, 300 + (Math.random() * 500));
   }
   
-  // Fallback: Beautiful placeholder ad
-  const ad = PLACEHOLDER_ADS[index % PLACEHOLDER_ADS.length];
   return `
     <div class="feed-ad" data-ad-index="${index}">
       <div class="feed-ad-label">Sponsored</div>
-      <div class="feed-ad-placeholder" style="background:${ad.gradient}" onclick="handleAdClick(${index})">
-        <div class="feed-ad-icon">${ad.icon}</div>
-        <div class="feed-ad-title">${ad.title}</div>
-        <div class="feed-ad-desc">${ad.desc}</div>
-        <button class="feed-ad-cta">${ad.cta} →</button>
+      <div class="feed-ad-container" id="${uniqueId}">
+        ${placeholderHTML}
       </div>
     </div>
   `;
 }
 
+function loadAdsterraInIframe(containerId, index) {
+  const container = document.getElementById(containerId);
+  if (!container || container.dataset.loaded === 'true') return;
+  
+  try {
+    // Create sandboxed iframe (Adsterra requires this for multiple ads)
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '280px';
+    iframe.style.border = 'none';
+    iframe.style.display = 'block';
+    iframe.style.borderRadius = 'var(--radius-lg)';
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('allowtransparency', 'true');
+    
+    const iframeContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { margin: 0; padding: 0; background: transparent; font-family: -apple-system, sans-serif; overflow: hidden; }
+          #ad-wrap { width: 100%; min-height: 260px; display: flex; align-items: center; justify-content: center; }
+        </style>
+      </head>
+      <body>
+        <div id="ad-wrap">
+          <script type="text/javascript">
+            atOptions = {
+              'key' : '${ADSTERRA_NATIVE_KEY}',
+              'format' : 'iframe',
+              'height' : 250,
+              'width' : 300,
+              'params' : {}
+            };
+          </script>
+          <script type="text/javascript" src="${ADSTERRA_NATIVE_URL}"></script>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Add iframe first, then write content
+    container.innerHTML = '';
+    container.appendChild(iframe);
+    container.dataset.loaded = 'true';
+    
+    // Write content to iframe
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.document.open();
+        iframe.contentWindow.document.write(iframeContent);
+        iframe.contentWindow.document.close();
+        APP.adImpressions++;
+      } catch (e) {
+        console.warn('Iframe write error:', e);
+        // Restore placeholder on error
+        const ad = PLACEHOLDER_ADS[index % PLACEHOLDER_ADS.length];
+        container.innerHTML = `
+          <div class="feed-ad-placeholder" style="background:${ad.gradient}" onclick="handleAdClick(${index})">
+            <div class="feed-ad-icon">${ad.icon}</div>
+            <div class="feed-ad-title">${ad.title}</div>
+            <div class="feed-ad-desc">${ad.desc}</div>
+            <button class="feed-ad-cta">${ad.cta} →</button>
+          </div>
+        `;
+      }
+    }, 100);
+  } catch (err) {
+    console.warn('Feed ad load error:', err);
+  }
+}
 // New function to load ads separately
 function loadFeedAdScript(containerId, index) {
   const container = document.getElementById(containerId);
@@ -3050,6 +3154,7 @@ function setupFeedScroll() {
   if (!feedPage || feedPage.dataset.scrollSetup) return;
   feedPage.dataset.scrollSetup = 'true';
 
+  // Preload more posts BEFORE user reaches the end (better UX)
   const handleScroll = throttle(() => {
     if (APP.currentPage !== 'home') return;
     if (APP.feedLoading || APP.feedEnded) return;
@@ -3058,16 +3163,41 @@ function setupFeedScroll() {
     const scrollHeight = feedPage.scrollHeight;
     const clientHeight = feedPage.clientHeight;
 
-    if (scrollTop + clientHeight >= scrollHeight - 300) {
+    // Load when 3 screens away from bottom (preload)
+    if (scrollTop + (clientHeight * 3) >= scrollHeight) {
       if (APP.feedTab === 'foryou') {
         loadFeed();
       } else {
         loadFollowingFeed();
       }
     }
-  }, 300);
+  }, 200);
 
-  feedPage.addEventListener('scroll', handleScroll);
+  feedPage.addEventListener('scroll', handleScroll, { passive: true });
+  
+  // Auto-play video when in view (TikTok style)
+  setupTikTokVideoObserver();
+}
+
+function setupVideoObservers() {
+  const videos = document.querySelectorAll('video[data-post-id]');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const video = entry.target;
+      if (entry.isIntersecting && entry.intersectionRatio > 0.75) {
+        video.play().catch(() => {});
+        video.muted = false;
+        const overlay = document.getElementById(`playOverlay_${video.dataset.postId}`);
+        if (overlay) overlay.classList.remove('show');
+      } else {
+        video.pause();
+        video.muted = true;
+      }
+    });
+  }, { threshold: [0, 0.5, 0.75, 1] });
+
+  videos.forEach(video => observer.observe(video));
 }
 
 // ==================== PULL TO REFRESH ====================
@@ -6212,7 +6342,6 @@ function ensureProfileBackButton() {
   const profilePage = document.getElementById('profilePage');
   if (!profilePage) return;
   
-  // Check if back header already exists
   if (document.getElementById('profileBackHeader')) return;
   
   const backHeader = document.createElement('div');
@@ -6224,7 +6353,7 @@ function ensureProfileBackButton() {
         <path d="M19 12H5m7-7-7 7 7 7"/>
       </svg>
     </button>
-    <div class="profile-back-title" id="profileBackTitle"></div>
+    <div class="profile-back-title" id="profileBackTitle">Profile</div>
     <div style="width:36px"></div>
   `;
   
@@ -6239,8 +6368,6 @@ function removeProfileBackButton() {
 function closeProfileOverlay() {
   removeProfileBackButton();
   closeOverlayPage('profilePage');
-  
-  // Reset profile viewing to own profile
   APP.profileViewingId = APP.currentUser?.uid;
 }
 
