@@ -3139,32 +3139,43 @@ function setupFeedScroll() {
   }, 200);
 
   feedPage.addEventListener('scroll', handleScroll, { passive: true });
-  
-  // Auto-play video when in view (TikTok style)
-  setupTikTokVideoObserver();
 }
 
-function setupVideoObservers() {
-  const videos = document.querySelectorAll('video[data-post-id]');
-
+function setupTikTokVideoObserver() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
-      if (entry.isIntersecting && entry.intersectionRatio > 0.75) {
+      if (!video || video.tagName !== 'VIDEO') return;
+      
+      if (entry.intersectionRatio > 0.75) {
+        // Video is 75%+ visible - play it
+        video.currentTime = 0;
         video.play().catch(() => {});
-        video.muted = false;
-        const overlay = document.getElementById(`playOverlay_${video.dataset.postId}`);
-        if (overlay) overlay.classList.remove('show');
+        // Unmute after user interaction (browsers block autoplay with sound)
+        if (window._userInteracted) {
+          video.muted = false;
+        }
       } else {
+        // Video is out of view - pause
         video.pause();
-        video.muted = true;
       }
     });
-  }, { threshold: [0, 0.5, 0.75, 1] });
+  }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
 
-  videos.forEach(video => observer.observe(video));
+  // Observe all videos
+  document.querySelectorAll('video[data-post-id]').forEach(video => {
+    observer.observe(video);
+  });
 }
 
+// Track user interaction for autoplay
+document.addEventListener('click', function() {
+  window._userInteracted = true;
+}, { once: true });
+
+document.addEventListener('touchstart', function() {
+  window._userInteracted = true;
+}, { once: true });
 // ==================== PULL TO REFRESH ====================
 
 (function setupPullToRefresh() {
