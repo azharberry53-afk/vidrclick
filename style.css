@@ -432,31 +432,37 @@ input[type="file"] {
 
 /* ==================== BOTTOM SHEET ==================== */
 .bottom-sheet-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--bg-overlay);
-  z-index: var(--z-sheet);
-  animation: fadeIn 0.25s ease;
+     max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 100%;
+    height: calc(100vh - 40px);
+    top: 20px;
+    border-radius: 24px;
 }
 
 .bottom-sheet {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--bg-sheet);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  z-index: calc(var(--z-sheet) + 1);
-  max-height: 85vh;
-  overflow-y: auto;
-  animation: sheetSlideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  padding-bottom: var(--safe-bottom);
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 100%;
+    border-radius: 24px 24px 0 0;
+    max-height: calc(100vh - 100px);
 }
 
 .bottom-sheet.closing {
   animation: sheetSlideDown 0.3s ease forwards;
 }
 
+  /* Toast container centered on desktop */
+  .toast-container {
+    max-width: 400px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
 @keyframes sheetSlideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
@@ -532,13 +538,11 @@ input[type="file"] {
 
 /* ==================== CENTER MODAL ==================== */
 .center-modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-  padding: 20px;
+   max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 100%;
 }
 
 .center-modal-overlay {
@@ -845,21 +849,11 @@ body.tiktok-mode #topHeader .header-icon-btn svg {
 
 /* ==================== BOTTOM NAV ==================== */
 #bottomNav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 8px 0;
-  padding-bottom: calc(8px + var(--safe-bottom));
-  min-height: var(--nav-height);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+    max-width: 450px;
+    border-radius: 0 0 24px 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 20px;
 }
 
 /* Dark overlay for bottom nav on TikTok feed */
@@ -1346,28 +1340,30 @@ body.tiktok-mode .story-username {
 
 /* Actions on RIGHT side (TikTok style) */
 .feed-actions {
-  position: absolute;
-  right: 12px;
-  bottom: 120px;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  align-items: center;
+right: 12px;
+    bottom: 100px;
 }
 
 .feed-action-btn {
   background: transparent;
   border: none;
   color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-  transition: transform 0.2s;
-  padding: 0;
+ right: 80px;
+    bottom: 24px;
+}
+
+  /* Better cursor on desktop */
+  .nav-item,
+  .feed-item,
+  .discover-card,
+  .product-card,
+  .game-card,
+  .settings-item,
+  .chat-list-item,
+  .notification-item,
+  button {
+    cursor: pointer;
+  }
 }
 
 .feed-action-btn:active {
@@ -1837,18 +1833,10 @@ body.tiktok-mode .story-username {
 
 /* Banner Ad */
 #bannerAd {
-  position: fixed;
-  bottom: calc(var(--nav-height) + var(--safe-bottom));
-  left: 0;
-  right: 0;
-  z-index: 999;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  min-height: var(--banner-height);
+   max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(20px + var(--nav-height));
 }
 
 /* Hide banner ad on home page (TikTok mode) */
@@ -1860,13 +1848,22 @@ body.tiktok-mode #bannerAd {
 
 /* ==================== AUTH PAGES ==================== */
 #authContainer {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-overlay);
-  background: var(--bg-primary);
-  overflow-y: auto;
-  display: none;
+   max-width: 450px;
+    margin: 20px auto;
+    height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 450px;
 }
+
+  /* Show desktop side info */
+  .desktop-side-info {
+    display: flex !important;
+  }
 
 .auth-page {
   min-height: 100vh;
@@ -5214,13 +5211,15 @@ body.live-fullscreen #storiesBar {
 }
 
 .live-fullscreen-container {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 20px;
+    bottom: 20px;
+    height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 .live-fullscreen-video {
@@ -6885,12 +6884,15 @@ body.live-fullscreen #storiesBar {
 
 /* ==================== STORY VIEWER ==================== */
 #storyViewer {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: #000;
-  display: flex;
-  flex-direction: column;
+max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 20px;
+    bottom: 20px;
+    height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 .story-viewer-content {
@@ -7349,25 +7351,33 @@ body.live-fullscreen #storiesBar {
 /* Tablet */
 @media (min-width: 768px) {
   #appShell {
-    max-width: 600px;
+    max-width: 500px;
     margin: 0 auto;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
     border-left: 1px solid var(--border-color);
     border-right: 1px solid var(--border-color);
+    position: relative;
   }
   
   #bottomNav,
   #bannerAd,
   .live-fullscreen-container,
   #storyViewer {
-    max-width: 600px;
+    max-width: 500px;
     left: 50%;
     transform: translateX(-50%);
   }
   
   .overlay-page {
-    max-width: 600px;
+    max-width: 450px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(calc(-50% + 225px));
+    top: 20px;
+    bottom: 20px;
+    height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   }
   
   .overlay-page.active {
@@ -7375,21 +7385,25 @@ body.live-fullscreen #storiesBar {
   }
   
   #homePage {
-    max-width: 600px;
-    margin: 0 auto;
+    max-width: 450px;
+    margin: 0;
+    height: 100%;
+    border-radius: 24px;
   }
   
   .feed-item,
   .feed-ad {
-    max-width: 600px;
+    max-width: 450px;
     margin: 0 auto;
   }
 }
 
 /* Desktop */
 @media (min-width: 1024px) {
-  #appShell {
-    max-width: 500px;
+  body {
+    background: linear-gradient(135deg, #f5e6ff 0%, #fce7f3 50%, #e0f2fe 100%);
+    background-attachment: fixed;
+    overflow: hidden;
   }
   
   #bottomNav,
@@ -7412,9 +7426,12 @@ body.live-fullscreen #storiesBar {
   
   .live-fullscreen-container,
   #storyViewer {
-    max-width: 500px;
+      max-width: 500px;
     left: 50%;
     transform: translateX(-50%);
+    right: auto;
+    width: 500px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
   }
   
   /* Show desktop background */
@@ -7423,17 +7440,72 @@ body.live-fullscreen #storiesBar {
   }
   
   [data-theme="dark"] body {
-    background: linear-gradient(135deg, #1a1625, #221d31);
+       background: linear-gradient(135deg, #1a1625 0%, #221d31 50%, #16213e 100%);
+    background-attachment: fixed;
+  }
+
+     /* Add decorative background elements */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -100px;
+    left: -100px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 107, 181, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatBg 15s ease-in-out infinite;
+  }
+  
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -100px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(167, 139, 250, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatBg 20s ease-in-out infinite reverse;
+  }
+
+     
+  @keyframes floatBg {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(50px, 50px); }
+  }
+  
+  #appShell {
+    max-width: 450px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    border-radius: 24px;
+    overflow: hidden;
+    margin: 20px auto;
+    height: calc(100vh - 40px);
+    height: calc(100dvh - 40px);
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  [data-theme="dark"] #appShell {
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
 }
 
 /* Large Desktop */
 @media (min-width: 1440px) {
-  #appShell {
-    max-width: 480px;
-    box-shadow: 0 0 60px rgba(0, 0, 0, 0.15);
+  #appShell,
+  #homePage,
+  .live-fullscreen-container,
+  #storyViewer,
+  #authContainer {
+    max-width: 420px;
   }
-}
 
 /* Landscape mobile */
 @media (orientation: landscape) and (max-height: 500px) {
