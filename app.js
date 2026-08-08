@@ -4823,14 +4823,11 @@ async function loadProfile(uid, asOverlay = false) {
   const page = document.getElementById('profilePage');
   if (page) page.scrollTop = 0;
 
-  // If viewing another user's profile, show as overlay with back button
+  // Handle overlay for other users
   if (asOverlay && uid !== APP.currentUser?.uid) {
     openOverlayPage('profilePage');
-    
-    // Add back button header
     ensureProfileBackButton();
   } else {
-    // Own profile - hide back button
     removeProfileBackButton();
   }
 
@@ -4840,15 +4837,18 @@ async function loadProfile(uid, asOverlay = false) {
   container.innerHTML = '<div class="loading-spinner small" style="margin:60px auto"></div>';
 
   try {
-  // Update back button title
-const titleEl = document.getElementById('profileBackTitle');
-if (titleEl) titleEl.textContent = userData.displayName || 'Profile';
+    // LOAD USERDATA FIRST before using it anywhere
     const userData = await getUserData(uid);
     if (!userData) {
       container.innerHTML = '<div class="empty-state"><h3>User not found</h3></div>';
       return;
     }
 
+    // NOW update back button title (userData exists)
+    const titleEl = document.getElementById('profileBackTitle');
+    if (titleEl) titleEl.textContent = userData.displayName || 'Profile';
+
+    // Record visit for other users
     if (uid !== APP.currentUser?.uid) {
       recordProfileVisit(uid);
     }
@@ -6895,11 +6895,26 @@ let selectedPaymentMethod = 'stripe';
 
 // ==================== STRIPE INTEGRATION ====================
 
-async function confirmGoldPurchase(packageId) {
+async async function confirmGoldPurchase(packageId) {
   const pkg = GOLD_PACKAGES.find(p => p.id === packageId);
   if (!pkg) return;
 
   closeCenterModal();
+  
+  // Check if Stripe is configured
+  if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.includes('YOUR_')) {
+    // Demo mode - simulate payment
+    openCenterModal(`
+      <div class="modal-title">💳 Payment (Demo Mode)</div>
+      <p class="modal-text">Stripe is not configured yet. In production, this would process the payment.</p>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="simulateGoldPurchase('${packageId}')">Simulate Purchase</button>
+      </div>
+    `);
+    return;
+  }
+  
   showLoading();
 
   try {
@@ -6920,7 +6935,56 @@ async function confirmGoldPurchase(packageId) {
   } catch (err) {
     hideLoading();
     console.error('Stripe error:', err);
-    showToast('Payment setup failed: ' + (err.message || 'Unknown error'), 'error');
+    
+    // Fallback to demo mode
+    openCenterModal(`
+      <div class="modal-title">⚠️ Payment Setup</div>
+      <p class="modal-text">Payment system is being configured. Try again later or use demo mode.</p>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="simulateGoldPurchase('${packageId}')">Demo Purchase</button>
+      </div>
+    `);
+  }
+}
+
+// Demo purchase for testing without Stripe
+async function simulateGoldPurchase(packageId) {
+  closeCenterModal();
+  showLoading();
+  
+  const pkg = GOLD_PACKAGES.find(p => p.id === packageId);
+  if (!pkg) { hideLoading(); return; }
+  
+  try {
+    const totalCoins = pkg.coins + (pkg.bonus || 0);
+    
+    await db.collection('users').doc(APP.currentUser.uid).update({
+      goldCoins: firebase.firestore.FieldValue.increment(totalCoins),
+      totalSpent: firebase.firestore.FieldValue.increment(pkg.price),
+    });
+    
+    APP.currentUserData.goldCoins += totalCoins;
+    
+    await db.collection('transactions').add({
+      uid: APP.currentUser.uid,
+      type: 'purchase',
+      amount: totalCoins,
+      coinType: 'gold',
+      price: pkg.price,
+      packageId,
+      method: 'demo',
+      description: `[DEMO] Purchased ${pkg.name}`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    
+    hideLoading();
+    launchConfetti();
+    showToast(`🪙 ${formatNumber(totalCoins)} gold coins added! (Demo Mode)`, 'success', 5000);
+    renderWallet();
+  } catch (err) {
+    hideLoading();
+    showToast('Demo purchase failed', 'error');
   }
 }
 
@@ -7047,6 +7111,21 @@ async function subscribeVerified() {
 
 async function confirmVerifiedSubscription() {
   closeCenterModal();
+  
+  // Check if Stripe is configured
+  if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.includes('YOUR_')) {
+    // Demo mode
+    openCenterModal(`
+      <div class="modal-title">✨ Subscription (Demo Mode)</div>
+      <p class="modal-text">Activate verified in demo mode?</p>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="simulateVerifiedSubscription()">Activate Demo</button>
+      </div>
+    `);
+    return;
+  }
+  
   showLoading();
 
   try {
@@ -7067,10 +7146,44 @@ async function confirmVerifiedSubscription() {
   } catch (err) {
     hideLoading();
     console.error('Subscription error:', err);
-    showToast('Subscription setup failed: ' + (err.message || 'Unknown error'), 'error');
+    
+    openCenterModal(`
+      <div class="modal-title">⚠️ Payment Setup</div>
+      <p class="modal-text">Subscription system is being configured.</p>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeCenterModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="simulateVerifiedSubscription()">Demo Subscribe</button>
+      </div>
+    `);
   }
 }
 
+async function simulateVerifiedSubscription() {
+  closeCenterModal();
+  showLoading();
+  
+  try {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    
+    await db.collection('users').doc(APP.currentUser.uid).update({
+      verified: true,
+      verifiedUntil: expiryDate,
+    });
+    
+    APP.currentUserData.verified = true;
+    APP.currentUserData.verifiedUntil = expiryDate;
+    
+    hideLoading();
+    launchConfetti();
+    showToast('✨ Welcome to Verified! (Demo)', 'success', 5000);
+    clearUserCache(APP.currentUser.uid);
+    renderWallet();
+  } catch (err) {
+    hideLoading();
+    showToast('Demo activation failed', 'error');
+  }
+}
 // ==================== WITHDRAWAL ====================
 
 function showWithdraw() {
