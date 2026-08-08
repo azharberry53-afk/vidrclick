@@ -7700,3 +7700,166 @@ button, a {
 }
 
 //---- end of part 7
+
+/* ==================== DESKTOP SIDE INFO ==================== */
+.desktop-side-info {
+  position: fixed;
+  top: 20px;
+  bottom: 20px;
+  width: 320px;
+  padding: 40px 30px;
+  overflow-y: auto;
+  z-index: 1;
+  display: none;
+}
+
+.desktop-side-info.left-side {
+  left: calc(50% - 450px/2 - 340px);
+}
+
+.desktop-side-info.right-side {
+  right: calc(50% - 450px/2 - 340px);
+}
+
+.desktop-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.feature-item:hover {
+  transform: translateX(4px);
+  border-color: var(--primary);
+}
+
+.feature-icon {
+  font-size: 24px;
+}
+
+.trending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.trending-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trending-item:hover {
+  transform: translateX(4px);
+  border-color: var(--primary);
+}
+
+.trending-rank {
+  width: 32px;
+  height: 32px;
+  background: var(--gradient-primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.trending-info {
+  flex: 1;
+}
+
+.trending-tag {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.trending-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.desktop-download-app {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.app-download-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--gradient-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.app-download-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Hide side info on tablet and below */
+@media (max-width: 1279px) {
+  .desktop-side-info {
+    display: none !important;
+  }
+}
+
+/* Show on large desktop */
+@media (min-width: 1280px) {
+  .desktop-side-info {
+    display: block !important;
+  }
+}
+
+/* Adjust for very wide screens */
+@media (min-width: 1600px) {
+  .desktop-side-info {
+    width: 350px;
+    padding: 40px;
+  }
+  
+  .desktop-side-info.left-side {
+    left: calc(50% - 450px/2 - 400px);
+  }
+  
+  .desktop-side-info.right-side {
+    right: calc(50% - 450px/2 - 400px);
+  }
+}
