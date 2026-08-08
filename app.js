@@ -1738,9 +1738,10 @@ function showInterstitialAd() {
   console.log('Interstitial ad triggered');
 }
 
+// ==================== REWARDED ADS ====================
+
 function showRewardedAd(callback) {
   const useAdsterra = ADSTERRA_NATIVE_KEY && ADSTERRA_NATIVE_URL;
-  const modalId = 'rewardedAdIframe_' + Date.now();
   
   openCenterModal(`
     <div class="modal-title">📺 Watch Ad to Earn</div>
@@ -1760,26 +1761,24 @@ function showRewardedAd(callback) {
     </div>
   `);
 
-  // Try to load Adsterra ad
   if (useAdsterra) {
-    setTimeout(() => {
+    setTimeout(function() {
       loadRewardedAdIframe();
     }, 200);
   } else {
-    // Show placeholder ad content
-    setTimeout(() => {
+    setTimeout(function() {
       showPlaceholderAd();
     }, 500);
   }
 
   window._rewardedAdCallback = callback;
 
-  let seconds = 15;
-  const timerEl = document.getElementById('adTimer');
-  const claimBtn = document.getElementById('claimRewardBtn');
-  const countdownEl = document.getElementById('rewardedAdCountdown');
+  var seconds = 15;
+  var timerEl = document.getElementById('adTimer');
+  var claimBtn = document.getElementById('claimRewardBtn');
+  var countdownEl = document.getElementById('rewardedAdCountdown');
 
-  window._rewardedAdTimer = setInterval(() => {
+  window._rewardedAdTimer = setInterval(function() {
     seconds--;
     if (timerEl) timerEl.textContent = seconds;
 
@@ -1790,7 +1789,7 @@ function showRewardedAd(callback) {
         claimBtn.disabled = false;
         claimBtn.style.opacity = '1';
         claimBtn.style.cursor = 'pointer';
-        claimBtn.onclick = () => {
+        claimBtn.onclick = function() {
           closeCenterModal();
           APP.adImpressions++;
           if (window._rewardedAdCallback) {
@@ -1804,12 +1803,12 @@ function showRewardedAd(callback) {
 }
 
 function loadRewardedAdIframe() {
-  const container = document.getElementById('rewardedAdContainer');
-  const placeholder = document.getElementById('adPlaceholder');
+  var container = document.getElementById('rewardedAdContainer');
+  var placeholder = document.getElementById('adPlaceholder');
   if (!container) return;
   
   try {
-    const iframe = document.createElement('iframe');
+    var iframe = document.createElement('iframe');
     iframe.style.width = '100%';
     iframe.style.height = '300px';
     iframe.style.border = 'none';
@@ -1819,42 +1818,15 @@ function loadRewardedAdIframe() {
     iframe.setAttribute('scrolling', 'no');
     iframe.setAttribute('frameborder', '0');
     
-    const iframeContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { margin:0; padding:0; background:#000; font-family:sans-serif; }
-          #ad { width:100%; min-height:280px; display:flex; align-items:center; justify-content:center; color:#fff; }
-        </style>
-      </head>
-      <body>
-        <div id="ad">
-          <script type="text/javascript">
-            atOptions = {
-              'key' : '${ADSTERRA_NATIVE_KEY}',
-              'format' : 'iframe',
-              'height' : 250,
-              'width' : 300,
-              'params' : {}
-            };
-          </script>
-          <script type="text/javascript" src="${ADSTERRA_NATIVE_URL}"></script>
-        </div>
-      </body>
-      </html>
-    `;
+    var iframeContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#000;font-family:sans-serif;}#ad{width:100%;min-height:280px;display:flex;align-items:center;justify-content:center;color:#fff;}</style></head><body><div id="ad"><script type="text/javascript">atOptions={"key":"' + ADSTERRA_NATIVE_KEY + '","format":"iframe","height":250,"width":300,"params":{}};</script><script type="text/javascript" src="' + ADSTERRA_NATIVE_URL + '"></script></div></body></html>';
     
     container.appendChild(iframe);
     
-    setTimeout(() => {
+    setTimeout(function() {
       try {
         iframe.contentWindow.document.open();
         iframe.contentWindow.document.write(iframeContent);
         iframe.contentWindow.document.close();
-        
-        // Hide placeholder once ad loads
         if (placeholder) placeholder.style.display = 'none';
       } catch (e) {
         console.warn('Iframe error:', e);
@@ -1868,18 +1840,11 @@ function loadRewardedAdIframe() {
 }
 
 function showPlaceholderAd() {
-  const container = document.getElementById('rewardedAdContainer');
+  var container = document.getElementById('rewardedAdContainer');
   if (!container) return;
   
-  const ad = PLACEHOLDER_ADS[Math.floor(Math.random() * PLACEHOLDER_ADS.length)];
-  container.innerHTML = `
-    <div style="width:100%;height:300px;background:${ad.gradient};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#fff;cursor:pointer" onclick="APP.adImpressions++">
-      <div style="font-size:64px;margin-bottom:12px">${ad.icon}</div>
-      <div style="font-size:22px;font-weight:800;margin-bottom:8px">${ad.title}</div>
-      <div style="font-size:14px;opacity:0.95;margin-bottom:20px;max-width:280px">${ad.desc}</div>
-      <button style="padding:12px 32px;background:#fff;color:#333;border:none;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2)">${ad.cta} →</button>
-    </div>
-  `;
+  var ad = PLACEHOLDER_ADS[Math.floor(Math.random() * PLACEHOLDER_ADS.length)];
+  container.innerHTML = '<div style="width:100%;height:300px;background:' + ad.gradient + ';display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#fff;cursor:pointer" onclick="APP.adImpressions++"><div style="font-size:64px;margin-bottom:12px">' + ad.icon + '</div><div style="font-size:22px;font-weight:800;margin-bottom:8px">' + ad.title + '</div><div style="font-size:14px;opacity:0.95;margin-bottom:20px;max-width:280px">' + ad.desc + '</div><button style="padding:12px 32px;background:#fff;color:#333;border:none;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2)">' + ad.cta + ' →</button></div>';
 }
 
 function cancelRewardedAd() {
