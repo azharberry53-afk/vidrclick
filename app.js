@@ -6987,7 +6987,7 @@ let selectedPaymentMethod = 'stripe';
 
 // ==================== STRIPE INTEGRATION ====================
 
-async async function confirmGoldPurchase(packageId) {
+async function confirmGoldPurchase(packageId) {
   const pkg = GOLD_PACKAGES.find(p => p.id === packageId);
   if (!pkg) return;
 
