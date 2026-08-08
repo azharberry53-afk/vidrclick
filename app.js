@@ -2594,6 +2594,7 @@ function renderFeed() {
   setupVideoObservers();
   setupCarousels();
   setupFeedScroll();
+    setupFeedMediaBackgrounds(); // ADD THIS
 }
 
 function renderFollowingFeed() {
@@ -2781,6 +2782,62 @@ function renderFeedItem(post) {
       </div>
     </div>
   `;
+}
+
+// Setup blurred backgrounds for feed media (TikTok style)
+function setupFeedMediaBackgrounds() {
+  document.querySelectorAll('.feed-media').forEach(mediaEl => {
+    if (mediaEl.dataset.bgSet) return;
+    
+    const img = mediaEl.querySelector('img');
+    const video = mediaEl.querySelector('video');
+    
+    if (img) {
+      // Wait for image to load
+      if (img.complete) {
+        applyBlurBg(mediaEl, img.src);
+      } else {
+        img.addEventListener('load', () => applyBlurBg(mediaEl, img.src));
+      }
+    } else if (video) {
+      // Use poster or first frame for video
+      const poster = video.poster;
+      if (poster) {
+        applyBlurBg(mediaEl, poster);
+      } else {
+        // Try to capture first frame
+        video.addEventListener('loadeddata', () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            const dataUrl = canvas.toDataURL();
+            applyBlurBg(mediaEl, dataUrl);
+          } catch (e) {
+            // Cross-origin video can't be captured
+          }
+        });
+      }
+    }
+    
+    mediaEl.dataset.bgSet = 'true';
+  });
+}
+
+function applyBlurBg(mediaEl, imgSrc) {
+  if (!imgSrc) return;
+  
+  // Create blur background element
+  let blurBg = mediaEl.querySelector('.feed-media-blur-bg');
+  if (!blurBg) {
+    blurBg = document.createElement('div');
+    blurBg.className = 'feed-media-blur-bg';
+    mediaEl.insertBefore(blurBg, mediaEl.firstChild);
+  }
+  
+  blurBg.style.backgroundImage = `url("${imgSrc}")`;
 }
 
 function renderVideoMedia(post) {
