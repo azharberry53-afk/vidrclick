@@ -725,7 +725,7 @@ function navigateTo(page, data = null) {
         loadProfile(APP.currentUser?.uid);
         break;
     }
-}
+)}
 
 function openOverlayPage(pageId) {
   const page = document.getElementById(pageId);
