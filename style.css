@@ -7863,3 +7863,406 @@ button, a {
     right: calc(50% - 450px/2 - 400px);
   }
 }
+
+/* ==================== RESPONSIVE DESIGN - PREMIUM DESKTOP ==================== */
+
+/* Tablet */
+@media (min-width: 768px) {
+  #appShell {
+    max-width: 500px;
+    margin: 0 auto;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    position: relative;
+  }
+  
+  #bottomNav {
+    max-width: 500px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  #bannerAd {
+    max-width: 500px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .overlay-page {
+    max-width: 500px;
+    left: 50%;
+    margin: 0 auto;
+    right: auto;
+    width: 500px;
+    transform: translateX(calc(-50% + 250px));
+  }
+  
+  .overlay-page.active {
+    transform: translateX(-50%);
+  }
+  
+  #homePage {
+    max-width: 500px;
+    margin: 0 auto;
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  .feed-item,
+  .feed-ad {
+    max-width: 500px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  
+  .live-fullscreen-container {
+    max-width: 500px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 500px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  }
+  
+  #storyViewer {
+    max-width: 500px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 500px;
+  }
+  
+  #authContainer {
+    max-width: 500px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 500px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Center modal on tablet */
+  .center-modal {
+    max-width: 500px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 100%;
+  }
+  
+  .bottom-sheet-overlay,
+  .bottom-sheet {
+    max-width: 500px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 100%;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  body {
+    background: linear-gradient(135deg, #f5e6ff 0%, #fce7f3 50%, #e0f2fe 100%);
+    background-attachment: fixed;
+    overflow: hidden;
+  }
+  
+  [data-theme="dark"] body {
+    background: linear-gradient(135deg, #1a1625 0%, #221d31 50%, #16213e 100%);
+    background-attachment: fixed;
+  }
+  
+  /* Add decorative background elements */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -100px;
+    left: -100px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 107, 181, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatBg 15s ease-in-out infinite;
+  }
+  
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -100px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(167, 139, 250, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatBg 20s ease-in-out infinite reverse;
+  }
+  
+  @keyframes floatBg {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(50px, 50px); }
+  }
+  
+  #appShell {
+    max-width: 450px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    border-radius: 24px;
+    overflow: hidden;
+    margin: 20px auto;
+    height: calc(100vh - 40px);
+    height: calc(100dvh - 40px);
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  [data-theme="dark"] #appShell {
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  
+  #bottomNav {
+    max-width: 450px;
+    border-radius: 0 0 24px 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 20px;
+  }
+  
+  #bannerAd {
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(20px + var(--nav-height));
+  }
+  
+  .overlay-page {
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(calc(-50% + 225px));
+    top: 20px;
+    bottom: 20px;
+    height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+  
+  .overlay-page.active {
+    transform: translateX(-50%);
+  }
+  
+  #homePage {
+    max-width: 450px;
+    margin: 0;
+    height: 100%;
+    border-radius: 24px;
+  }
+  
+  .feed-item,
+  .feed-ad {
+    max-width: 450px;
+    margin: 0 auto;
+  }
+  
+  .live-fullscreen-container {
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 20px;
+    bottom: 20px;
+    height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  
+  #storyViewer {
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 20px;
+    bottom: 20px;
+    height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  
+  #authContainer {
+    max-width: 450px;
+    margin: 20px auto;
+    height: calc(100vh - 40px);
+    border-radius: 24px;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 450px;
+  }
+  
+  /* Show desktop side info */
+  .desktop-side-info {
+    display: flex !important;
+  }
+  
+  /* Center modals */
+  .center-modal {
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 100%;
+  }
+  
+  .bottom-sheet-overlay {
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 100%;
+    height: calc(100vh - 40px);
+    top: 20px;
+    border-radius: 24px;
+  }
+  
+  .bottom-sheet {
+    max-width: 450px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 100%;
+    border-radius: 24px 24px 0 0;
+    max-height: calc(100vh - 100px);
+  }
+  
+  /* Toast container centered on desktop */
+  .toast-container {
+    max-width: 400px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  /* Adjust feed for smaller desktop view */
+  .feed-actions {
+    right: 12px;
+    bottom: 100px;
+  }
+  
+  .feed-caption-area {
+    right: 80px;
+    bottom: 24px;
+  }
+  
+  /* Better cursor on desktop */
+  .nav-item,
+  .feed-item,
+  .discover-card,
+  .product-card,
+  .game-card,
+  .settings-item,
+  .chat-list-item,
+  .notification-item,
+  button {
+    cursor: pointer;
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1440px) {
+  #appShell,
+  #homePage,
+  .live-fullscreen-container,
+  #storyViewer,
+  #authContainer {
+    max-width: 420px;
+  }
+  
+  .overlay-page {
+    max-width: 420px;
+    transform: translateX(calc(-50% + 210px));
+  }
+  
+  .overlay-page.active {
+    transform: translateX(-50%);
+  }
+  
+  #bottomNav,
+  #bannerAd {
+    max-width: 420px;
+  }
+  
+  .feed-item,
+  .feed-ad {
+    max-width: 420px;
+  }
+}
+
+/* Landscape mobile */
+@media (orientation: landscape) and (max-height: 500px) {
+  .feed-item,
+  .feed-ad {
+    min-height: 100vh;
+  }
+  
+  .live-fullscreen-video {
+    height: 100vh;
+  }
+  
+  .story-content {
+    min-height: 100vh;
+  }
+}
+
+/* High DPI screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .feed-avatar,
+  .story-avatar,
+  .nav-avatar,
+  .profile-avatar {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .feed-actions {
+    right: 8px;
+    bottom: 110px;
+  }
+  
+  .feed-action-btn svg {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .feed-caption-area {
+    right: 76px;
+  }
+  
+  .gift-grid,
+  .sticker-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .profile-menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .discover-grid,
+  .shop-grid,
+  .games-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .balance-amount {
+    font-size: 26px;
+  }
+}
