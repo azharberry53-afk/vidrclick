@@ -658,39 +658,40 @@ function navigateTo(page, data = null) {
     return;
   }
 
-  if (pages.includes(page)) {
+     if (pages.includes(page)) {
+    // Hide overlay pages
     overlayPages.forEach(p => {
       const el = document.getElementById(p);
       if (el) el.classList.remove('active');
     });
-
-    pages.forEach(p => {
-      const el = document.getElementById(p + 'Page');
-      if (el) el.classList.remove('active');
-    });
-
+      
     const target = document.getElementById(page + 'Page');
     if (target) {
       target.classList.add('active');
       target.scrollTop = 0;
     }
-
+       
+  // CRITICAL: Always show bottom nav
+    const bottomNav = document.getElementById('bottomNav');
+    if (bottomNav) {
+      bottomNav.style.display = 'flex';
+    }
+       
+           // Update nav
     document.querySelectorAll('.nav-item').forEach(item => {
       item.classList.toggle('active', item.dataset.page === page);
-    });
-
+    
     const header = document.getElementById('topHeader');
     const storiesBar = document.getElementById('storiesBar');
     const feedTabs = document.getElementById('feedTabs');
-    const bottomNav = document.getElementById('bottomNav');
     const bannerAd = document.getElementById('bannerAd');
 
     if (page === 'home') {
       if (header) header.style.display = 'flex';
       if (feedTabs) feedTabs.style.display = 'flex';
       if (storiesBar && !APP.storiesHidden) storiesBar.classList.remove('hidden');
-      if (bottomNav) bottomNav.style.display = 'flex';
-      if (bannerAd) bannerAd.style.display = 'flex';
+      if (bannerAd) bannerAd.style.display = 'none'; // Hide banner on home (TikTok style)
+      document.body.classList.add('tiktok-mode');
       startFeedXpTimer();
       startStoriesHideTimer();
     } else {
@@ -701,13 +702,14 @@ function navigateTo(page, data = null) {
         if (header) header.style.display = 'none';
       }
       if (storiesBar) storiesBar.classList.add('hidden');
-      if (bottomNav) bottomNav.style.display = 'flex';
       if (bannerAd) bannerAd.style.display = 'flex';
+      document.body.classList.remove('tiktok-mode');
       stopFeedXpTimer();
     }
-
+    
     APP.currentPage = page;
-
+    
+    // Load content for the page
     switch (page) {
       case 'home':
         if (APP.feedPosts.length === 0) loadFeed();
@@ -2843,11 +2845,13 @@ function applyBlurBg(mediaEl, imgSrc) {
 function renderVideoMedia(post) {
   const thumbnail = post.thumbnailURL || '';
   return `
+    <div class="feed-media-blur-bg" style="background-image:url('${thumbnail}')"></div>
     <div class="feed-video-wrap" data-video-id="${post.id}">
       <video
         src="${post.mediaURL || ''}"
         poster="${thumbnail}"
         playsinline
+        webkit-playsinline
         loop
         muted
         preload="metadata"
@@ -2867,7 +2871,10 @@ function renderImageMedia(post) {
   if (images.length === 0) return '';
 
   if (images.length === 1) {
-    return `<img src="${images[0]}" alt="" loading="lazy" onerror="this.src='default-product.png'">`;
+    return `
+      <div class="feed-media-blur-bg" style="background-image:url('${images[0]}')"></div>
+      <img src="${images[0]}" alt="" loading="lazy" onerror="this.src='default-product.png'">
+    `;
   }
 
   let slides = '';
@@ -2878,6 +2885,7 @@ function renderImageMedia(post) {
   });
 
   return `
+    <div class="feed-media-blur-bg" style="background-image:url('${images[0]}')"></div>
     <div class="feed-carousel" data-carousel-id="${post.id}" data-total="${images.length}">
       <div class="feed-carousel-track" data-current="0" style="width:${images.length * 100}%">
         ${slides}
@@ -3075,33 +3083,59 @@ function handleAdClick(index) {
 
 function setupVideoObservers() {
   const videos = document.querySelectorAll('video[data-post-id]');
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      const video = entry.target;
-      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        video.play().catch(() => {});
-        const overlay = document.getElementById(`playOverlay_${video.dataset.postId}`);
-        if (overlay) overlay.classList.remove('show');
-      } else {
-        video.pause();
-      }
+  
+  if (!window._feedVideoObserver) {
+    window._feedVideoObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (!video || video.tagName !== 'VIDEO') return;
+        
+        if (entry.intersectionRatio >= 0.7) {
+          // Pause all other videos first
+          document.querySelectorAll('video[data-post-id]').forEach(v => {
+            if (v !== video) v.pause();
+          });
+          
+          // Play this video
+          video.currentTime = 0;
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              // Autoplay blocked - keep muted and try again
+              video.muted = true;
+              video.play().catch(() => {});
+            });
+          }
+          
+          const overlay = document.getElementById(`playOverlay_${video.dataset.postId}`);
+          if (overlay) overlay.classList.remove('show');
+        } else {
+          video.pause();
+        }
+      });
+    }, { 
+      threshold: [0, 0.5, 0.7, 1],
+      rootMargin: '0px'
     });
-  }, { threshold: [0, 0.6, 1] });
+  }
 
-  videos.forEach(video => observer.observe(video));
+  videos.forEach(video => {
+    window._feedVideoObserver.observe(video);
+  });
 }
 
 function toggleVideoPlay(video) {
   const overlay = document.getElementById(`playOverlay_${video.dataset.postId}`);
   if (video.paused) {
     video.play().catch(() => {});
-    video.muted = false;
     if (overlay) overlay.classList.remove('show');
   } else {
     video.pause();
     if (overlay) overlay.classList.add('show');
   }
+  
+  // Toggle mute on click (TikTok style)
+  video.muted = !video.muted;
 }
 
 // ==================== CAROUSEL (Touch + Mouse for PC) ====================
@@ -3176,7 +3210,6 @@ function setupFeedScroll() {
   if (!feedPage || feedPage.dataset.scrollSetup) return;
   feedPage.dataset.scrollSetup = 'true';
 
-  // Preload more posts BEFORE user reaches the end (better UX)
   const handleScroll = throttle(() => {
     if (APP.currentPage !== 'home') return;
     if (APP.feedLoading || APP.feedEnded) return;
@@ -3185,8 +3218,8 @@ function setupFeedScroll() {
     const scrollHeight = feedPage.scrollHeight;
     const clientHeight = feedPage.clientHeight;
 
-    // Load when 3 screens away from bottom (preload)
-    if (scrollTop + (clientHeight * 3) >= scrollHeight) {
+    // Preload when 2 screens from bottom
+    if (scrollTop + (clientHeight * 2) >= scrollHeight) {
       if (APP.feedTab === 'foryou') {
         loadFeed();
       } else {
@@ -3196,7 +3229,26 @@ function setupFeedScroll() {
   }, 200);
 
   feedPage.addEventListener('scroll', handleScroll, { passive: true });
+  
+  // Ensure bottom nav stays visible
+  const bottomNav = document.getElementById('bottomNav');
+  if (bottomNav) {
+    bottomNav.style.display = 'flex';
+  }
 }
+
+// Also ensure bottom nav is visible when navigating to home
+function ensureBottomNavVisible() {
+  const bottomNav = document.getElementById('bottomNav');
+  if (bottomNav && APP.currentPage === 'home') {
+    bottomNav.style.display = 'flex';
+    bottomNav.style.visibility = 'visible';
+    bottomNav.style.opacity = '1';
+  }
+}
+
+// Call it periodically to fix any hiding issues
+setInterval(ensureBottomNavVisible, 500);
 
 function setupTikTokVideoObserver() {
   const observer = new IntersectionObserver((entries) => {
